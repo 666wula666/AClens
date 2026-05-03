@@ -1,0 +1,166 @@
+import os
+import json
+import logging
+import re
+from typing import Dict, Any, List, Optional, Union
+from enum import Enum
+from pydantic import BaseModel, Field
+from pathlib import Path
+from src.llm.service import LLMService
+
+logger = logging.getLogger(__name__)
+
+class PolicyPrediction(BaseModel):
+    """Structured policy inference output."""
+    reasoning: str = Field(..., description="Step-by-step reasoning about the access policy")
+    intended_policy_nl: str = Field(..., description="Inferred policy in natural language")
+    access_level: str = Field(..., description="Who can enter the function? (e.g., Public, Owner, Role)")
+    security_invariants: Union[str, List[str]] = Field(..., description="What specific behaviors must be forbidden regardless of the caller? (e.g., 'Must not allow arbitrary external calls')")
+    evidence_snippets: List[str] = Field(..., description="Code snippets supporting the inference")
+    risk_analysis: str = Field(..., description="Likely impact if the policy is violated")
+    confidence: float = Field(default=0.0, description="Confidence score")
+    compliance_assessment: str = Field(
+        default="UNKNOWN",
+        description="Preliminary compliance result: COMPLIANT, VIOLATED, or UNKNOWN"
+    )
+    dominant_peer_pattern: str = Field(
+        default="",
+        description="Dominant protection pattern observed in peer functions (e.g., 'All peers use onlyOwner modifier')"
+    )
+
+class BaseAgent:
+    """Thin wrapper over `LLMService`."""
+    def __init__(self, model_name: str = "gpt-4o-mini", api_key: Optional[str] = None):
+        self.model_name = model_name
+        self.llm_service = LLMService(api_key=api_key, model=model_name)
+
+    def _call_llm(self, system_prompt: str, user_prompt: str, response_model: Any, retries: int = 2) -> Any:
+        return self.llm_service.call_completion(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            response_model=response_model,
+            model=self.model_name,
+            retries=retries
+        )
+
+class AuditorAgent(BaseAgent):
+    """Infers the intended access policy of a function."""
+    def infer_policy(self, code: str, context: str, symbols: Dict[str, str], static_warnings: List[str] = None, func_metadata: Dict = None, peer_functions: Optional[List[Dict]] = None) -> PolicyPrediction:
+        # Constructors are deployment-only.
+        if func_metadata and func_metadata.get("is_constructor"):
+            return PolicyPrediction(
+                reasoning="Constructor executes only once during deployment. Initial setup phase.",
+                intended_policy_nl="Safe (Initialization phase)",
+                access_level="Restricted (Constructor)",
+                security_invariants="None (Deployment)",
+                evidence_snippets=[],
+                risk_analysis="None. Deployment logic.",
+                confidence=1.0
+            )
+
+        # Read-only functions are not root-cause candidates.
+        if func_metadata and (func_metadata.get("is_view") or func_metadata.get("is_pure")):
+            return PolicyPrediction(
+                reasoning="Function is marked as view or pure, indicating it does not modify state.",
+                intended_policy_nl="Publicly accessible",
+                access_level="Public",
+                security_invariants="No state modification",
+                evidence_snippets=[],
+                risk_analysis="Minimal risk as no state modification occurs.",
+                confidence=1.0
+            )
+        
+        warning_context = ""
+        if static_warnings:
+            warning_context = "\n[CRITICAL STATIC ANALYSIS WARNINGS]:\n" + "\n".join([f"- {w}" for w in static_warnings]) + "\n"
+
+        peer_context = ""
+        if peer_functions:
+            peer_lines = ["\n[PEER FUNCTIONS FOR COMPARATIVE INFERENCE]:"]
+            for i, peer in enumerate(peer_functions, 1):
+                match_str = ", ".join(peer.get("match_reasons", []))
+                peer_lines.append(f"--- Peer {i}: {peer['name']} (match: {match_str}) ---")
+                peer_lines.append(peer.get("source", "/* source unavailable */"))
+            peer_context = "\n".join(peer_lines) + "\n"
+
+        system_prompt = (
+            "TASK: Analyze the provided Solidity function and infer its intended Access Control Policy.\n\n"
+            "### OBJECTIVES\n"
+            "1. **Privilege Inference**: Determine the required authorization level (e.g., Public, Owner, DAO) based on modifiers, state checks, and function visibility.\n"
+            "2. **Invariant Generation**: Formulate security invariants that must hold true for this function to prevent unauthorized state manipulation or asset loss.\n\n"
+            "### PERMISSIONLESS-BY-DESIGN PRINCIPLE (CRITICAL)\n"
+            "Many DeFi functions are intentionally public without access control. Do NOT infer 'Restricted' "
+            "or 'Owner/Admin' access for the following patterns unless the code contains an explicit but "
+            "insufficient access check:\n"
+            "- **Token standard operations**: transfer, transferFrom, approve, burn, mint (ERC20/ERC721/ERC1155) "
+            "that operate on msg.sender's own balance or allowance\n"
+            "- **DeFi user operations**: deposit, withdraw, swap, borrow, repay, liquidate, claim, stake, "
+            "unstake, delegate, redeem, supply, exit, enter\n"
+            "- **Epoch/checkpoint functions**: newEpoch, advanceEpoch, checkpoint, poke, sync, update\n"
+            "- **Functions with `initializer` modifier**: Already one-time guarded by OpenZeppelin Initializable\n"
+            "For these patterns, assign access level 'Public' or 'Public (Self-Service)' unless the code shows "
+            "a SPECIFIC broken access check (e.g., require that exists but is bypassable).\n\n"
+            "### EVIDENCE REQUIREMENT FOR 'RESTRICTED'\n"
+            "Only classify a function as 'Restricted' (Owner/Admin/Role) when at least ONE of these conditions holds:\n"
+            "1. The code contains an explicit access modifier (onlyOwner, onlyRole, etc.) that appears insufficient\n"
+            "2. The code contains an inline require/if checking msg.sender against a state variable, but "
+            "the check is bypassable or missing for some paths\n"
+            "3. The function modifies governance-critical scalar state (owner, admin, paused, oracle, fee rate) "
+            "AND has zero access checks\n"
+            "If the function simply writes to msg.sender-indexed mappings or calls external contracts with "
+            "msg.sender's funds, classify as 'Public (Self-Service)', NOT 'Restricted'.\n\n"
+            "### ANALYSIS FRAMEWORK\n"
+            "- **State Operations**: Identify writes to critical state variables (e.g., ownership, balances).\n"
+            "- **External Interactions**: Analyze calls to external contracts (e.g., transfer, delegatecall).\n"
+            "- **Control Flow**: Examine conditions (require/if) that restrict execution.\n"
+            "- **Self-Service**: If [SELF-SERVICE CONTEXT] annotations are present, the function operates on msg.sender's own state. Assign access level 'Public (Self-Service)'.\n\n"
+            "### STATIC WARNINGS INTEGRATION\n"
+            "If [CRITICAL STATIC ANALYSIS WARNINGS] are present, consider them as supplementary signals but "
+            "do NOT let [UNGUARDED] warnings alone override the permissionless-by-design principle. "
+            "An [UNGUARDED] state modification is expected for self-service and standard DeFi operations. "
+            "Only elevate the warning when the unguarded operation modifies governance state (owner, admin, "
+            "paused, oracle) or enables cross-user fund extraction.\n\n"
+            "### INTRA-CONTRACT COMPARATIVE INFERENCE\n"
+            "When [PEER FUNCTIONS] are provided, they are structurally similar functions from the same "
+            "contract selected for their comparable sink operations, shared critical state variables, "
+            "or shared modifiers. Compare the target function against these peers:\n"
+            "- If peers that perform similar operations are consistently guarded (e.g., onlyOwner, "
+            "role checks), but the target lacks equivalent protection, this is evidence of a "
+            "missing guard.\n"
+            "- If peers are themselves unguarded and clearly designed for public/self-service use, "
+            "the target is more likely intentionally open.\n"
+            "- If fewer than 2 peers are available or peer patterns conflict, lean toward UNKNOWN "
+            "for compliance_assessment rather than forcing a restriction.\n"
+            "Report the dominant peer pattern in the \"dominant_peer_pattern\" field.\n\n"
+            "### OUTPUT FORMAT (JSON)\n"
+            "{\n"
+            "  \"reasoning\": \"Logical deduction of the policy based on code analysis.\",\n"
+            "  \"access_level\": \"Required privilege (e.g., 'Owner', 'Public', 'Public (Self-Service)', 'Whitelisted').\",\n"
+            "  \"security_invariants\": \"List of strict conditions that must be enforced.\",\n"
+            "  \"intended_policy_nl\": \"Concise summary of the inferred policy.\",\n"
+            "  \"evidence_snippets\": [\"Code lines supporting the inference.\"],\n"
+            "  \"risk_analysis\": \"Potential security impact if the policy is violated.\",\n"
+            "  \"confidence\": 0.0 to 1.0,\n"
+            "  \"dominant_peer_pattern\": \"Dominant protection pattern observed in peer functions, or empty if no peers provided.\"\n"
+            "}"
+        )
+        user_prompt = f"Symbols: {json.dumps(symbols)}\nContext: {context}{warning_context}{peer_context}\nCode:\n{code}"
+
+        return self._call_llm(system_prompt, user_prompt, PolicyPrediction)
+
+class MultiAgentSystem:
+    """Small facade around the policy agent."""
+    def __init__(self, model_name: str = "gpt-4o-mini", api_key: Optional[str] = None):        self.auditor_agent = AuditorAgent(model_name, api_key)
+
+    def analyze_function(self, code: str, context: str, symbols: Dict[str, str], static_warnings: List[str] = None) -> Dict[str, Any]:
+        """Run policy inference for one function."""
+        policy = self.auditor_agent.infer_policy(code, context, symbols, static_warnings)
+        
+        return {
+            "status": "ANALYZED",
+            "policy": policy
+        }
+
+class LLMAgent(AuditorAgent):
+    """Backward-compatible alias for `AuditorAgent`."""
+    pass

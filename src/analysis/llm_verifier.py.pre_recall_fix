@@ -1,0 +1,147 @@
+import os
+import json
+import logging
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, Field
+from src.llm.agent import BaseAgent
+
+logger = logging.getLogger(__name__)
+
+from typing import List, Union, Optional
+from pydantic import BaseModel, Field, field_validator
+
+class VerificationResult(BaseModel):
+    """Structured verifier output."""
+    status: str = Field(..., description="VULNERABLE, SAFE, or UNKNOWN")
+
+    reasoning: Union[str, List[str]] = Field(..., description="Reasoning for the final verdict")
+
+    severity: str = Field(default="None", description="High, Medium, Low, or None")
+
+    @field_validator('reasoning', mode='before')
+    @classmethod
+    def convert_list_to_string(cls, v):
+        if isinstance(v, list):
+            return "\n".join(str(item) for item in v)
+        return v
+class LLMVerifier(BaseAgent):
+    """Checks whether a simulated trace violates the inferred policy."""
+
+    def __init__(self, model_name: str = "gpt-4o-mini", api_key: Optional[str] = None):
+        super().__init__(model_name, api_key)
+
+    def verify_trace(self, trace_lines: List[str], intended_policy: str, contract_context: str = "",
+                     access_level: str = "", self_service_indicators: List[str] = None,
+                     static_warnings: List[str] = None) -> VerificationResult:
+        """Verify one retained trace against the inferred policy."""
+        access_context = ""
+        if access_level:
+            access_context += f"\n### POLICY AGENT CLASSIFICATION\nAccess Level: {access_level}\n"
+        if self_service_indicators:
+            access_context += "Self-Service Evidence (from static analysis):\n"
+            for ind in self_service_indicators:
+                access_context += f"  - {ind}\n"
+        if static_warnings:
+            access_context += "Static Analysis Warnings:\n"
+            for warning in static_warnings:
+                access_context += f"  - {warning}\n"
+
+        system_prompt = (
+            "TASK: Verify if the provided Execution Trace violates the Intended Security Policy "
+            "**and represents an economically exploitable access control vulnerability**.\n\n"
+            "### DEFINITIONS\n"
+            "- **Policy ($P$)**: A set of constraints on who can perform sensitive operations "
+            "(e.g., 'Only Owner', 'No arbitrary calls').\n"
+            "- **Trace ($T$)**: An execution trace consisting of path constraints (Conditions) "
+            "and state updates (Operations).\n\n"
+            "### SELF-SERVICE RULE\n"
+            "If the Policy Agent classified the function as 'Self-Service' or 'Public (Self-Service)', "
+            "do NOT automatically classify it as SAFE. A function is self-service only if the trace confirms "
+            "that it exclusively updates caller-local state and does not change shared protocol state.\n"
+            "To classify as SAFE under this rule, ALL of the following must hold:\n"
+            "- State writes are restricted to caller-local mappings indexed by msg.sender (or a value derived from msg.sender).\n"
+            "- The trace does NOT update shared or global state such as total supply, reserves, prices, reward rates, "
+            "ownership, roles, pause flags, configuration fields, lock parameters, or protocol accounting aggregates.\n"
+            "- The trace does NOT perform initialization, reconfiguration, order settlement, pool synchronization, "
+            "or reward distribution that affects other users or the protocol as a whole.\n"
+            "- If the function takes an address/account parameter, classify it as caller-local when the trace "
+            "explicitly constrains that parameter to equal msg.sender (or _msgSender()). Do not treat such a parameter "
+            "as an arbitrary third-party principal.\n"
+            "- Mappings keyed by externally supplied asset identifiers or replay markers such as tokenId, orderId, "
+            "signature, nonce, hash, proof, or claim ticket are NOT caller-local state, even if the caller proves "
+            "ownership of the referenced asset. Those writes consume or alter shared protocol entitlement state.\n"
+            "EXCEPTIONS where self-service functions may still be VULNERABLE:\n"
+            "- transferFrom/approve: verify the allowance mechanism is correctly implemented. If the trace "
+            "shows that a caller can spend tokens or set allowances for OTHER users without proper authorization "
+            "(e.g., missing allowance[from][msg.sender] check), classify as VULNERABLE.\n"
+            "- Functions with address parameters (from, to, user, account): if these parameters control "
+            "WHOSE state is modified and there is no check that the caller is authorized to act on their behalf, "
+            "classify as VULNERABLE despite the self-service label.\n"
+            "- Conversely, if the trace already enforces self-authorization such as `require(account == msg.sender)` "
+            "or a correct allowance/signature check, do NOT classify the function as VULNERABLE merely because it "
+            "contains an address parameter or writes caller-authorized allowance state.\n"
+            "- Functions that mint, burn, claim from shared pools, settle orders, execute swaps, sync reserves, "
+            "or write initialization/configuration state should NOT be treated as self-service merely because "
+            "msg.sender appears in part of the trace.\n\n"
+            "### PERMISSIONLESS-BY-DESIGN RULE\n"
+            "Do NOT infer SAFE solely because a function is public/external, common in DeFi, or appears "
+            "permissionless by design. Public settlement and maintenance entry points may still be root causes "
+            "if they let arbitrary callers affect shared protocol state without satisfying the intended policy.\n"
+            "Common token or DeFi patterns may be SAFE only when the trace confirms they preserve protocol "
+            "ownership, shared reserves, and cross-user economic isolation.\n\n"
+            "### INITIALIZATION RULE\n"
+            "Do NOT infer SAFE solely from modifiers such as `initializer` or `onlyInitializing`. "
+            "If the trace reaches an initialization function and writes privileged, governance, economic, "
+            "or configuration state, treat it as potentially vulnerable unless the trace proves that "
+            "the initialization phase is genuinely unreachable to arbitrary callers after deployment.\n\n"
+            "### STATIC EVIDENCE RULE\n"
+            "Treat graph-derived static warnings as high-priority evidence. In particular, warnings about "
+            "unguarded control-variable writes, cross-user mutation, or suspicious initialization should "
+            "override generic 'permissionless' assumptions unless the trace clearly disproves the warning.\n\n"
+            "### VERIFICATION LOGIC\n"
+            "Determine if there exists a valid state in $T$ that contradicts $P$ "
+            "**and benefits a rational attacker at the expense of OTHER parties**. Specifically:\n"
+            "1. **Privilege Escalation**: Does $T$ allow an unprivileged caller "
+            "to modify critical protocol state (e.g., `owner`, `admin`, `paused`, `oracle`) "
+            "without satisfying authorization?\n"
+            "2. **Missing Guard**: Does $T$ lack `require` checks mandated by $P$, "
+            "allowing unauthorized access to restricted operations?\n"
+            "3. **Unguarded Initialization**: Does $T$ allow re-initialization of "
+            "already-deployed state without proper guards?\n\n"
+            "### JUDGMENT CRITERIA\n"
+            "- **VULNERABLE**: $T$ reaches a Sink WITHOUT satisfying $P$ "
+            "**AND the exploit causes economic loss to OTHER users or the protocol** "
+            "(e.g., stealing funds, hijacking governance, draining reserves).\n"
+            "- **SAFE**: Use this only when the provided trace itself demonstrates caller-local behavior "
+            "with no cross-user or protocol-level effect, such as validated self-service updates that stay "
+            "within msg.sender-scoped state. Do not classify as SAFE if the trace writes supply, reserves, "
+            "governance, initialization, or configuration state.\n"
+            "- **UNKNOWN**: Use this when the provided trace does not establish a violation, but also does "
+            "not justify a safety conclusion. If the trace is benign, ambiguous, incomplete, or only shows "
+            "one non-violating path among potentially many, return UNKNOWN rather than SAFE.\n\n"
+            "### OUTPUT FORMAT (JSON)\n"
+            "{\n"
+            "  \"status\": \"VULNERABLE | SAFE | UNKNOWN\",\n"
+            "  \"reasoning\": \"Formal explanation specifying the economic impact on other parties. "
+            "Example: 'Trace allows arbitrary caller to modify owner, enabling fund theft.'\",\n"
+            "  \"severity\": \"High, Medium, Low, or None\"\n"
+            "}"
+        )
+        trace_text = "\n".join(trace_lines)
+        user_prompt = f"### INTENDED POLICY:\n{intended_policy}\n\n{access_context}### CONTRACT CONTEXT:\n{contract_context}\n\n### EXECUTION TRACE:\n{trace_text}"
+
+        try:
+            result = self._call_llm(system_prompt, user_prompt, VerificationResult)
+            if result:
+                logger.info(f"[LLMVerifier] Verification completed: {result.status}")
+                return result
+            else:
+                raise ValueError("LLM returned empty result")
+
+        except Exception as e:
+            logger.error(f"[LLMVerifier] Verification failed: {e}")
+            return VerificationResult(
+                status="UNKNOWN",
+                reasoning=f"Verification failed: {str(e)}",
+                severity="None"
+            )

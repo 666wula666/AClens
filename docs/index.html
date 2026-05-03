@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ACLens: Graph-Guided Multi-Agent Framework for Access Control Vulnerability Detection</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .hero-body { padding: 3rem 1.5rem; }
+    .publication-title { font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; }
+    .publication-authors { font-size: 1.2rem; color: #4a4a4a; margin-bottom: 1rem; }
+    .author-block { display: inline-block; margin-right: 15px; }
+    .publication-venue { font-size: 1.2rem; font-style: italic; color: #7a7a7a; margin-bottom: 1.5rem; }
+    .abstract-text { text-align: justify; font-size: 1.1rem; line-height: 1.6; }
+    .section-title { font-size: 2rem; font-weight: bold; margin-bottom: 1.5rem; margin-top: 2rem; border-bottom: 2px solid #eee; padding-bottom: 0.5rem; }
+    .image-caption { text-align: center; font-style: italic; color: #666; margin-top: 0.5rem; }
+    .image-container { text-align: center; margin: 2rem 0; }
+    .image-container img { max-width: 100%; height: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; }
+    .footer { background-color: #f5f5f5; padding: 2rem 1.5rem; text-align: center; }
+  </style>
+</head>
+<body>
+
+<section class="hero is-light">
+  <div class="hero-body has-text-centered">
+    <div class="container is-max-desktop">
+      <h1 class="publication-title">ACLens: Graph-Guided Multi-Agent Framework for Access Control Vulnerability Detection in Smart Contracts</h1>
+      <div class="publication-authors">
+        <span class="author-block">Anonymous Author(s)</span>
+      </div>
+      <div class="publication-venue">
+        <span>The 41st IEEE/ACM International Conference on Automated Software Engineering (ASE 2026)</span>
+      </div>
+      <div class="column has-text-centered">
+        <div class="publication-links">
+          <span class="link-block">
+            <a href="static/pdf/paper.pdf" target="_blank" class="button is-dark is-rounded">
+              <span class="icon"><i class="fas fa-file-pdf"></i></span>
+              <span>Paper PDF</span>
+            </a>
+          </span>
+          <span class="link-block">
+            <a href="https://github.com/" target="_blank" class="button is-dark is-rounded">
+              <span class="icon"><i class="fab fa-github"></i></span>
+              <span>Code (Coming Soon)</span>
+            </a>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract -->
+    <h2 class="section-title">Abstract</h2>
+    <div class="content abstract-text">
+      <p>Smart contracts are immutable, self-executing programs deployed on blockchains that typically manage substantial financial assets, making them a prime target for attackers. While Access Control (AC) vulnerabilities constitute the leading cause of financial loss, identifying them is increasingly challenging as authorization logic spans multiple functions with shared state variables and diverse business rules. Existing detectors are heavily dependent on guard pattern matching or sender taint analysis, but these methods frequently prove ineffective in the context of DeFi protocols. The root cause of such vulnerabilities is rarely the absence of guard patterns, but rather the exploitable reachability of privileged operations under unintended policies.
+
+Tackling this fundamental issue requires evaluating two distinct criteria, namely identifying which operations carry privileged effects and determining whether any feasible path can reach them in violation of the authorization policy implied by the contract's own protection patterns. In this work, we propose ACLens, a multi-agent framework guided by program graphs to conduct the analysis in two dedicated phases. The first phase performs deterministic graph analysis to pinpoint critical sinks and delineate a compact evidence boundary around them. The second phase deploys three agents to reconstruct an execution trace reaching each sink, infer the intended authorization policy from intra-contract evidence, and determine whether the reconstructed trace violates the inferred policy. On a DeFi exploit benchmark of 46 validated projects and 97 vulnerable functions, ACLens reaches 83.5% recall and 55.1% F1, outperforming the strongest baseline (i.e., ACTaint) by 46.4 points in recall and 20.0 points in F1.</p>
+    </div>
+
+    <!-- Methodology -->
+    <h2 class="section-title">Methodology</h2>
+    <div class="content abstract-text">
+      <p>ACLens formulates Access Control (AC) vulnerability detection as a two-phase process: <strong>Graph-Guided Structural Analysis</strong> and <strong>Multi-Agent Security Reasoning</strong>. It leverages an Access Control Property Graph (ACPG) to identify critical sinks and extract a compact evidence boundary for each target function. Then, specialized LLM agents reconstruct the execution trace, infer intended authorization policies, and verify if the trace violates that policy.</p>
+    </div>
+    <div class="image-container">
+      <img src="static/images/methodology.png" alt="Methodology Overview">
+      <p class="image-caption">Figure 1: The two-phase architecture of the ACLens multi-agent framework.</p>
+    </div>
+
+    <!-- Example -->
+    <h2 class="section-title">Motivating Example & Graph Representation</h2>
+    <div class="content abstract-text">
+      <p>Authorization logic in DeFi protocols is often distributed across multiple functions and shared state variables. ACLens constructs the ACPG to capture cross-function state relationships and caller-dependent guard semantics, providing the precise structural evidence needed by the reasoning agents.</p>
+    </div>
+    <div class="image-container">
+      <img src="static/images/example.png" alt="Motivating Example">
+      <p class="image-caption">Figure 2: Access Control Property Graph (ACPG) capturing cross-function dependencies.</p>
+    </div>
+
+    <!-- Results / Ablation -->
+    <h2 class="section-title">Evaluation & Results</h2>
+    <div class="content abstract-text">
+      <p>On a comprehensive DeFi benchmark of 46 validated projects, ACLens significantly outperforms existing specialized baselines. It achieves an 83.5% recall and 55.1% F1 score on confirmed exploits under a strict function-level protocol.</p>
+    </div>
+    <div class="image-container">
+      <img src="static/images/ablation.png" alt="Evaluation Results">
+      <p class="image-caption">Figure 3: Ablation study and performance comparison of ACLens components.</p>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <p>
+      This project page was automatically generated from the LaTeX source code. 
+      The source code and datasets are available at <a href="https://doi.org/10.5281/zenodo.19220416">Zenodo</a>.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,409 @@
+import logging
+import json
+import os
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel, Field
+from src.llm.service import LLMService
+from src.analysis.trace_validator import TraceWitnessValidator
+
+logger = logging.getLogger(__name__)
+
+MAX_CANDIDATES_PER_SINK = 3
+
+
+class TraceCandidate(BaseModel):
+    trace_lines: List[str] = Field(default_factory=list)
+    structured_trace: Optional[List[Dict[str, Any]]] = None
+    success: bool = False
+    error: Optional[str] = None
+    validation_errors: List[str] = Field(default_factory=list)
+    validation_warnings: List[str] = Field(default_factory=list)
+    sink_covered: bool = False
+
+
+class TraceGenerationResult(BaseModel):
+    trace_lines: List[str] = Field(default_factory=list)
+    structured_trace: Optional[List[Dict[str, Any]]] = None
+    success: bool = False
+    error: Optional[str] = None
+    validation_errors: List[str] = Field(default_factory=list)
+    validation_warnings: List[str] = Field(default_factory=list)
+    sink_covered: bool = False
+    validated_candidates: List[TraceCandidate] = Field(default_factory=list)
+    attempted_candidates: int = 0
+
+class LLMTraceGenerator:
+    """
+    使用 LLM 从源代码中重构执行轨迹。
+    """
+    def __init__(self, api_key: Optional[str] = None):
+        self.model = "gpt-4o-mini" # 使用推理能力较强的模型
+        self.llm_service = LLMService(api_key=api_key, model=self.model)
+
+from src.analysis.relevance_agent import RelevanceAgent
+
+class TraceSimulatorAgent(LLMTraceGenerator):
+    """
+    轨迹模拟智能体：在 ContextBuilder 提供的裁剪上下文中，利用 LLM 模拟执行路径。
+    """
+    def __init__(self, api_key: Optional[str] = None):
+        super().__init__(api_key)
+        self.relevance_agent = RelevanceAgent(api_key=api_key)
+        self.trace_validator = TraceWitnessValidator()
+
+    def simulate_trace(self, context: str, sink_description: str) -> TraceGenerationResult:
+        # Legacy method wrapper
+        result = self.simulate_batch(context, [{"id": "single", "description": sink_description}])
+        return result.get("single", TraceGenerationResult(trace_lines=[], success=False, error="Simulation failed"))
+
+    def simulate_batch(self, context: str, sinks: List[Dict[str, str]], context_builder: Any = None) -> Dict[str, TraceGenerationResult]:
+        """
+        Batch process multiple sinks with bounded candidate search and context repair.
+
+        Context repair strategy:
+        1. Graph-based (fast, precise): detect unresolved CALL edges in the backward slice
+        2. LLM-based (slower, semantic): RelevanceAgent identifies missing context from trace failures
+        """
+        current_context = context
+        last_results = {}
+
+        # Max retries for dynamic context retrieval
+        max_retries = 2
+
+        for attempt in range(max_retries):
+            logger.info(f"Trace Simulation Attempt {attempt + 1}/{max_retries}")
+            last_results = self._simulate_batch_internal(current_context, sinks)
+
+            # Identify failures that might be fixed by context
+            failed_sinks = [sid for sid, res in last_results.items() if not res.success]
+
+            if not failed_sinks or not context_builder:
+                return last_results
+
+            # --- Hybrid Gap Detection ---
+            new_code_blocks = []
+            fetched_names = set()
+
+            # Layer 1: Graph-based gap detection (fast, no LLM call)
+            if hasattr(context_builder, 'get_graph_detected_gaps'):
+                graph_gaps = context_builder.get_graph_detected_gaps()
+                for func_name in graph_gaps:
+                    if f"function {func_name}" in current_context:
+                        continue
+                    code = context_builder.get_function_code_by_name(func_name)
+                    if code:
+                        new_code_blocks.append(f"// Graph-Detected Dependency: {func_name}\n{code}")
+                        fetched_names.add(func_name)
+                        logger.info(f"[GraphGap] Retrieved: {func_name}")
+
+            # Layer 2: LLM-based gap detection (semantic, for gaps graph analysis misses)
+            logger.info("Analyzing missing context for failed traces...")
+            failed_reasons = []
+            for sink_id in failed_sinks:
+                res = last_results.get(sink_id)
+                if not res:
+                    continue
+                if res.error:
+                    failed_reasons.append(f"[sink {sink_id}] {res.error}")
+                if res.validation_errors:
+                    failed_reasons.append(
+                        f"[sink {sink_id}] validation: " + "; ".join(res.validation_errors)
+                    )
+            missing = self.relevance_agent.analyze_missing_context(
+                current_context,
+                "Target Function in Context",
+                trace_error="\n".join(failed_reasons)
+            )
+
+            if missing.missing_functions:
+                for func_name in missing.missing_functions:
+                    if func_name in fetched_names:
+                        continue
+                    if f"function {func_name}" in current_context:
+                        continue
+                    code = context_builder.get_function_code_by_name(func_name)
+                    if code:
+                        new_code_blocks.append(f"// LLM-Detected Dependency: {func_name}\n{code}")
+                        fetched_names.add(func_name)
+
+            if not new_code_blocks:
+                logger.info("No missing context identified by either graph analysis or RelevanceAgent.")
+                return last_results
+
+            # Update context and retry
+            current_context += "\n\n### DYNAMICALLY RETRIEVED CONTEXT:\n" + "\n".join(new_code_blocks)
+            logger.info(f"Hybrid Gap Detection: Added {len(new_code_blocks)} missing functions "
+                        f"({len([b for b in new_code_blocks if 'Graph-Detected' in b])} graph, "
+                        f"{len([b for b in new_code_blocks if 'LLM-Detected' in b])} LLM). Retrying...")
+
+        return last_results
+
+    def _simulate_batch_internal(self, context: str, sinks: List[Dict[str, str]]) -> Dict[str, TraceGenerationResult]:
+        """
+        单轮批量模拟，对每个 sink 生成少量结构化候选轨迹。
+        """
+        if not sinks:
+            return {}
+            
+        system_prompt = (
+            "You are a 'Structured Trace Analysis Engine' for smart contracts. Your task is to perform rigorous execution path modeling within graph-extracted context.\n"
+            "Instead of simple text generation, you must perform **structured trace analysis** to track constraints and state changes.\n\n"
+            "### INPUT:\n"
+            "1. **Execution Context**: Contract source code (pruned via graph-guided context slicing).\n"
+            "2. **Target Sinks**: List of vulnerable operations to reach.\n\n"
+            "### METHODOLOGY (Structured Trace Analysis):\n"
+            "For EACH sink, perform the following steps:\n"
+            "1. **State Initialization ($\\sigma_0$)**: Define the initial state (e.g., `msg.sender` is an arbitrary external caller $\\alpha$, `balances` is a parameterized map).\n"
+            "2. **Forward Execution ($\\sigma_t \\rightarrow \\sigma_{t+1}$)**: Simulate execution from function entry to the sink. **MANDATORY**: You MUST inline all Modifiers AND Internal Function Calls (e.g., `_burn`, `_transfer`) encountered in the path. Do not treat them as black boxes.\n"
+            "3. **Constraint Accumulation ($\\pi$)**: For every `require`, `if`, or `assert`, record the path condition $\\pi$ required to proceed.\n"
+            "4. **Taint Propagation (Data Flow)**: Track data flow from untrusted sources (`msg.data`, `msg.value`, parameters) to the sink.\n"
+            "5. **Feasibility Check**: Ensure the accumulated path constraints are logically consistent (satisfiable).\n\n"
+            f"Generate up to {MAX_CANDIDATES_PER_SINK} materially different candidate traces per sink. "
+            "Candidates should differ in branch conditions, inlined callees, or state-update sequences when such alternatives exist. "
+            "If you can ground only one candidate, return one. Do not invent diversity that is not supported by the provided code.\n\n"
+            "### OUTPUT FORMAT (JSON):\n"
+            "**IMPORTANT**: You MUST generate a result for EVERY `sink_id` in the input list. If a sink is unreachable, return one failed candidate with `success: false` and explain why in `error`. Do NOT omit any sink from the output JSON.\n"
+            "{\n"
+            "  \"results\": {\n"
+            "    \"sink_id\": {\n"
+            "      \"candidates\": [\n"
+            "        {\n"
+            "          \"success\": true,\n"
+            "          \"trace_lines\": [\n"
+            "             \"1. [MODIFIER] onlyowner checks (msg.sender == owner)\",\n"
+            "             \"2. [CONSTRAINT] require(amount > 0) => Must be True\",\n"
+            "             \"3. [STATE_WRITE] balances[msg.sender] -= amount\",\n"
+            "             \"4. [EXTERNAL_CALL] target.call(data)\"\n"
+            "          ],\n"
+            "          \"structured_trace\": [\n"
+            "            {\"step\": 1, \"type\": \"CONSTRAINT\", \"code\": \"require(msg.sender == owner)\", \"formula\": \"msg.sender == owner\", \"taint_source\": null},\n"
+            "            {\"step\": 2, \"type\": \"STATE_WRITE\", \"code\": \"balances[msg.sender] -= amount\", \"formula\": \"balances[msg.sender] := balances[msg.sender] - amount\", \"taint_source\": \"amount\"}\n"
+            "          ]\n"
+            "        }\n"
+            "      ]\n"
+            "    }\n"
+            "  }\n"
+            "}"
+        )
+        
+        sinks_desc = json.dumps(sinks, indent=2)
+        user_prompt = f"### EXECUTION CONTEXT:\n{context}\n\n### TARGET SINKS:\n{sinks_desc}\n\nGenerate structured traces:"
+        
+        try:
+            data = self.llm_service.call_completion(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                model=self.model,
+                temperature=0.2,
+                response_format={"type": "json_object"}
+            )
+            
+            if not data or not isinstance(data, dict):
+                raise ValueError("Invalid response from LLM")
+
+            results_data = data.get("results", {})
+            
+            final_results = {}
+            for sink in sinks:
+                s_id = str(sink["id"])
+                if s_id in results_data:
+                    res = results_data[s_id]
+                    raw_candidates = res.get("candidates")
+                    if not isinstance(raw_candidates, list) or not raw_candidates:
+                        raw_candidates = [res]
+                    final_results[s_id] = self._validate_candidates(
+                        raw_candidates=raw_candidates,
+                        context=context,
+                        sink_description=sink.get("description", "")
+                    )
+                else:
+                    final_results[s_id] = TraceGenerationResult(
+                        trace_lines=[],
+                        success=False,
+                        error="LLM skipped this sink",
+                        validation_errors=["LLM omitted this sink from the batch response"]
+                    )
+            return final_results
+            
+        except Exception as e:
+            logger.error(f"Batch Trace Simulation failed: {e}")
+            return {str(s["id"]): TraceGenerationResult(trace_lines=[], success=False, error=str(e)) for s in sinks}
+
+    def _validate_candidates(self, raw_candidates: List[Any], context: str, sink_description: str) -> TraceGenerationResult:
+        attempted = 0
+        valid_candidates: List[TraceCandidate] = []
+        aggregate_errors: List[str] = []
+        aggregate_warnings: List[str] = []
+        seen_signatures = set()
+        first_invalid: Optional[TraceGenerationResult] = None
+
+        for raw in raw_candidates[:MAX_CANDIDATES_PER_SINK]:
+            attempted += 1
+
+            if not isinstance(raw, dict):
+                candidate = TraceGenerationResult(
+                    trace_lines=[],
+                    success=False,
+                    error="Candidate trace entry must be an object",
+                    validation_errors=["Candidate trace entry must be an object"],
+                )
+            else:
+                sanitized_trace_lines = self._sanitize_trace_lines(raw.get("trace_lines", []))
+                sanitized_structured = self._sanitize_structured_trace(raw.get("structured_trace", []))
+                candidate = TraceGenerationResult(
+                    trace_lines=sanitized_trace_lines,
+                    structured_trace=sanitized_structured,
+                    success=raw.get("success", False),
+                    error=raw.get("error"),
+                )
+                candidate = self._validate_result(
+                    result=candidate,
+                    context=context,
+                    sink_description=sink_description,
+                )
+
+            if candidate.success and candidate.trace_lines:
+                signature = self._candidate_signature(candidate)
+                if signature in seen_signatures:
+                    aggregate_warnings.append(
+                        f"Duplicate validated candidate ignored at position {attempted}"
+                    )
+                    continue
+                seen_signatures.add(signature)
+                valid_candidates.append(
+                    TraceCandidate(
+                        trace_lines=list(candidate.trace_lines),
+                        structured_trace=list(candidate.structured_trace or []),
+                        success=True,
+                        error=candidate.error,
+                        validation_errors=list(candidate.validation_errors),
+                        validation_warnings=list(candidate.validation_warnings),
+                        sink_covered=candidate.sink_covered,
+                    )
+                )
+            else:
+                if first_invalid is None:
+                    first_invalid = candidate
+                if candidate.error:
+                    aggregate_errors.append(candidate.error)
+                aggregate_errors.extend(candidate.validation_errors)
+                aggregate_warnings.extend(candidate.validation_warnings)
+
+        if valid_candidates:
+            primary = valid_candidates[0]
+            return TraceGenerationResult(
+                trace_lines=list(primary.trace_lines),
+                structured_trace=list(primary.structured_trace or []),
+                success=True,
+                error=None,
+                validation_errors=list(primary.validation_errors),
+                validation_warnings=self._dedupe_messages(
+                    list(primary.validation_warnings) + aggregate_warnings
+                ),
+                sink_covered=primary.sink_covered,
+                validated_candidates=valid_candidates,
+                attempted_candidates=attempted,
+            )
+
+        if first_invalid is None:
+            first_invalid = TraceGenerationResult(
+                trace_lines=[],
+                success=False,
+                error="No candidate trace generated",
+                validation_errors=["No candidate trace generated"],
+            )
+
+        return TraceGenerationResult(
+            trace_lines=list(first_invalid.trace_lines),
+            structured_trace=list(first_invalid.structured_trace or []),
+            success=False,
+            error=first_invalid.error or "No candidate trace validated",
+            validation_errors=self._dedupe_messages(
+                list(first_invalid.validation_errors) + aggregate_errors
+            ),
+            validation_warnings=self._dedupe_messages(
+                list(first_invalid.validation_warnings) + aggregate_warnings
+            ),
+            sink_covered=first_invalid.sink_covered,
+            validated_candidates=[],
+            attempted_candidates=attempted,
+        )
+
+    def _sanitize_trace_lines(self, raw_lines: Any) -> List[str]:
+        if not isinstance(raw_lines, list):
+            return []
+
+        sanitized: List[str] = []
+        for item in raw_lines:
+            if not isinstance(item, str):
+                continue
+            line = item.strip()
+            if not line:
+                continue
+            sanitized.append(line)
+        return sanitized
+
+    def _sanitize_structured_trace(self, raw_structured: Any) -> List[Dict[str, Any]]:
+        if not isinstance(raw_structured, list):
+            return []
+
+        sanitized: List[Dict[str, Any]] = []
+        for item in raw_structured:
+            if not isinstance(item, dict):
+                continue
+            sanitized.append(item)
+        return sanitized
+
+    def _validate_result(self, result: TraceGenerationResult, context: str, sink_description: str) -> TraceGenerationResult:
+        validation = self.trace_validator.validate(
+            trace_lines=result.trace_lines,
+            structured_trace=result.structured_trace,
+            context=context,
+            sink_description=sink_description,
+        )
+
+        result.trace_lines = validation.normalized_trace_lines or result.trace_lines
+        result.structured_trace = validation.normalized_structured_trace or result.structured_trace
+        result.validation_errors = validation.errors
+        result.validation_warnings = validation.warnings
+        result.sink_covered = validation.sink_covered
+
+        llm_error = result.error.strip() if isinstance(result.error, str) and result.error.strip() else ""
+        if not validation.is_valid:
+            messages = []
+            if llm_error:
+                messages.append(llm_error)
+            messages.extend(validation.errors)
+            result.success = False
+            result.error = " | ".join(messages) if messages else "Trace validation failed"
+        else:
+            result.success = True
+            if not llm_error:
+                result.error = None
+
+        return result
+
+    def _candidate_signature(self, result: TraceGenerationResult) -> str:
+        lines = [line.strip() for line in result.trace_lines if isinstance(line, str) and line.strip()]
+        if lines:
+            return "\n".join(lines)
+        structured = []
+        for item in result.structured_trace or []:
+            if not isinstance(item, dict):
+                continue
+            structured.append(
+                f"{item.get('step')}:{str(item.get('type', '')).strip().upper()}:{str(item.get('code', '')).strip()}"
+            )
+        return "\n".join(structured)
+
+    def _dedupe_messages(self, messages: List[str]) -> List[str]:
+        seen = set()
+        ordered = []
+        for message in messages:
+            if not message:
+                continue
+            if message in seen:
+                continue
+            seen.add(message)
+            ordered.append(message)
+        return ordered

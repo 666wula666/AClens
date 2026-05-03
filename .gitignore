@@ -1,0 +1,13 @@
+# Ignore everything in the root directory
+/*
+
+# But allow these directories and files
+!/src/
+!/docs/
+!/.gitignore
+
+# General ignores inside the allowed directories
+__pycache__/
+*.py[cod]
+*$py.class
+.DS_Store
