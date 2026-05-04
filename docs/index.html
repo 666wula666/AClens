@@ -455,76 +455,91 @@
                     </div>
                 </div>
 
-                <!-- RQ3 & RQ4 Combined -->
-                <div class="grid md:grid-cols-2 gap-12" data-aos="fade-up">
-                    <div>
-                        <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 border-l-4 border-brand-500 pl-4">RQ3: Ablation Study</h3>
-                        <p class="text-slate-600 mb-6">We measure the contribution of multi-agent reasoning, graph slicing, and sink identification by building ablation variants and evaluating them on the DeFi dataset.</p>
-                        
-                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
-                            <div class="overflow-x-auto">
-                                <table class="enterprise-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Configuration</th>
-                                            <th>TP</th>
-                                            <th>FP</th>
-                                            <th>FN</th>
-                                            <th>Recall (%)</th>
-                                            <th>F1 (%)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr class="row-highlight">
-                                            <td class="font-bold flex items-center gap-2"><i class="fas fa-star text-amber-400"></i> Full System</td>
-                                            <td>81</td><td>116</td><td>16</td><td>83.5</td><td>55.1</td>
-                                        </tr>
-                                        <tr><td>w/o multi-agent</td><td>65</td><td>87</td><td>32</td><td>67.0</td><td>52.2</td></tr>
-                                        <tr><td>w/o graph slicing</td><td>77</td><td>119</td><td>20</td><td>79.4</td><td>52.6</td></tr>
-                                        <tr><td>w/o sink ident.</td><td>81</td><td>429</td><td>16</td><td>83.5</td><td>26.7</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-50 rounded-xl p-5 border border-slate-200">
-                            <h4 class="font-bold text-slate-800 mb-2"><i class="fas fa-check text-green-500 mr-2"></i> Conclusion</h4>
-                            <p class="text-sm text-slate-600">Every component is essential. Removing multi-agent reasoning drops recall by 16.5 points; removing graph slicing drops recall on large contracts; removing sink identification inflates false positives from 116 to 429.</p>
+                <!-- RQ3: Ablation Study -->
+                <div class="mb-20" data-aos="fade-up">
+                    <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 border-l-4 border-brand-500 pl-4">RQ3: Ablation Study</h3>
+                    <p class="text-slate-600 text-lg mb-8">We measure the contribution of multi-agent reasoning, graph slicing, and sink identification by building ablation variants and evaluating them on the DeFi dataset.</p>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                        <div class="overflow-x-auto">
+                            <table class="enterprise-table">
+                                <thead>
+                                    <tr>
+                                        <th>Configuration</th>
+                                        <th>TP</th>
+                                        <th>FP</th>
+                                        <th>FN</th>
+                                        <th>Precision (%)</th>
+                                        <th>Recall (%)</th>
+                                        <th>F1 (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="row-highlight">
+                                        <td class="font-bold flex items-center gap-2"><i class="fas fa-star text-amber-400"></i> Full System</td>
+                                        <td>81</td><td>116</td><td>16</td><td>41.1</td><td>83.5</td><td>55.1</td>
+                                    </tr>
+                                    <tr><td>w/o multi-agent</td><td>65</td><td>87</td><td>32</td><td>42.8</td><td>67.0</td><td>52.2</td></tr>
+                                    <tr><td>w/o graph slicing</td><td>77</td><td>119</td><td>20</td><td>39.3</td><td>79.4</td><td>52.6</td></tr>
+                                    <tr><td>w/o sink ident.</td><td>81</td><td>429</td><td>16</td><td>15.9</td><td>83.5</td><td>26.7</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    
-                    <div>
-                        <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 border-l-4 border-brand-500 pl-4">RQ4: Scoping Efficiency</h3>
-                        <p class="text-slate-600 mb-6">We measure how graph-guided slicing changes the input that reaches phase two. The table below profiles the analysis cost under GPT-4o-mini on the five largest DeFi projects.</p>
-                        
-                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
-                            <div class="overflow-x-auto">
-                                <table class="enterprise-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Project (repr. func)</th>
-                                            <th>LoC</th>
-                                            <th>Tokens (K)</th>
-                                            <th>Cost (¢)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td><code>approveToken</code></td><td>4,053</td><td>109.3</td><td>2.0</td></tr>
-                                        <tr><td><code>swap</code></td><td>4,008</td><td>34.6</td><td>0.7</td></tr>
-                                        <tr><td><code>transferFrom</code></td><td>3,367</td><td>42.4</td><td>0.8</td></tr>
-                                        <tr><td><code>setToken</code></td><td>3,070</td><td>86.7</td><td>1.9</td></tr>
-                                        <tr><td><code>withdraw</code></td><td>2,488</td><td>82.8</td><td>1.6</td></tr>
-                                        <tr class="bg-slate-50 font-semibold border-t-2 border-slate-300">
-                                            <td><em>All (mean)</em></td><td>1,375</td><td>59.0</td><td>1.2</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+
+                    <div class="answer-box p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
+                                <i class="fas fa-check-circle text-green-600 text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold text-slate-800 text-lg mb-2">Conclusion for RQ3</h4>
+                                <p class="text-slate-700 leading-relaxed">Every component is essential. Removing multi-agent reasoning drops recall by 16.5 points; removing graph slicing drops recall on large contracts; removing sink identification inflates false positives from 116 to 429.</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- RQ4: Scoping Efficiency -->
+                <div class="mb-20" data-aos="fade-up">
+                    <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 border-l-4 border-brand-500 pl-4">RQ4: Scoping Efficiency & Cost</h3>
+                    <p class="text-slate-600 text-lg mb-8">We measure how graph-guided slicing changes the input that reaches phase two. The table below profiles the analysis cost under GPT-4o-mini on the five largest DeFi projects.</p>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                        <div class="overflow-x-auto">
+                            <table class="enterprise-table">
+                                <thead>
+                                    <tr>
+                                        <th>Project (repr. func)</th>
+                                        <th>LoC</th>
+                                        <th>Tokens (K)</th>
+                                        <th>Time (s)</th>
+                                        <th>Cost (¢)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><code>approveToken</code></td><td>4,053</td><td>109.3</td><td>27</td><td>2.0</td></tr>
+                                    <tr><td><code>swap</code></td><td>4,008</td><td>34.6</td><td>23</td><td>0.7</td></tr>
+                                    <tr><td><code>transferFrom</code></td><td>3,367</td><td>42.4</td><td>20</td><td>0.8</td></tr>
+                                    <tr><td><code>setToken</code></td><td>3,070</td><td>86.7</td><td>29</td><td>1.9</td></tr>
+                                    <tr><td><code>withdraw</code></td><td>2,488</td><td>82.8</td><td>19</td><td>1.6</td></tr>
+                                    <tr class="bg-slate-50 font-semibold border-t-2 border-slate-300 text-brand-800">
+                                        <td><em>All (mean)</em></td><td>1,375</td><td>59.0</td><td>22</td><td>1.2</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
-                        <div class="bg-brand-50 rounded-xl p-5 border border-brand-200">
-                            <h4 class="font-bold text-brand-900 mb-2"><i class="fas fa-bolt text-amber-500 mr-2"></i> Massive Reduction</h4>
-                            <p class="text-sm text-brand-800">Graph-guided structural analysis reduces the average input context from over <strong>6,333 tokens</strong> (full contract) to just <strong>92 tokens</strong> per function (97.9% reduction), drastically lowering API costs.</p>
+                    <div class="answer-box p-6 border-l-4" style="border-left-color: #f59e0b;">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-1">
+                                <i class="fas fa-bolt text-amber-600 text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold text-slate-800 text-lg mb-2">Massive Context Reduction</h4>
+                                <p class="text-slate-700 leading-relaxed">Graph-guided structural analysis reduces the average input context from over <strong>6,333 tokens</strong> (full contract) to just <strong>92 tokens</strong> per function (a 97.9% reduction), drastically lowering API costs while improving agent focus.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
