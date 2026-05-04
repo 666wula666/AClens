@@ -65,91 +65,196 @@
             top: 0;
             left: 0;
             z-index: 0;
-            background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+            background: linear-gradient(-45deg, #f8fafc, #e0f2fe, #f0f9ff, #f1f5f9);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         /* Glassmorphism Utilities */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 1);
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+        }
+        
+        .glass-panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 35px 60px -15px rgba(14, 165, 233, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
         }
         
         .glass-nav {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Card Enhancements */
+        .shadow-card {
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        
+        .shadow-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #0ea5e9, #3b82f6);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .shadow-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -15px rgba(14, 165, 233, 0.15);
+            border-color: rgba(186, 230, 253, 0.8);
+        }
+        
+        .shadow-card:hover::before {
+            opacity: 1;
         }
 
         /* Typography Highlights */
         .text-gradient {
-            background: linear-gradient(135deg, #0369a1, #3b82f6);
+            background: linear-gradient(135deg, #0284c7, #3b82f6, #6366f1);
+            background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            animation: shine 4s linear infinite;
         }
         
-        /* Table Styles */
+        @keyframes shine {
+            to {
+                background-position: 200% center;
+            }
+        }
+        
+        /* Table Styles Enhanced */
         .enterprise-table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
         }
         .enterprise-table th {
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
             color: #475569;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
             font-size: 0.75rem;
             letter-spacing: 0.05em;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #cbd5e1;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
             text-align: left;
         }
         .enterprise-table td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
             color: #334155;
             font-size: 0.95rem;
+            transition: background-color 0.2s ease;
         }
         .enterprise-table tr:last-child td {
             border-bottom: none;
         }
         .enterprise-table tbody tr {
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
-        .enterprise-table tbody tr:hover {
-            background-color: #f8fafc;
+        .enterprise-table tbody tr:hover td {
+            background-color: #f0f9ff;
         }
         .row-highlight {
-            background-color: #eff6ff !important;
-            font-weight: 600;
-            color: #1e3a8a !important;
+            background: linear-gradient(90deg, #f0f9ff, #ffffff) !important;
+            position: relative;
+        }
+        .row-highlight::after {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            background-color: #3b82f6;
         }
         .row-highlight td {
             color: #1e3a8a;
+            font-weight: 500;
+            border-bottom-color: #bfdbfe;
         }
 
-        /* Answer Callout Box */
+        /* Answer Callout Box Enhanced */
         .answer-box {
-            background: linear-gradient(to right, #f0f9ff, #ffffff);
+            background: linear-gradient(120deg, #ffffff, #f8fafc);
             border-left: 4px solid #0ea5e9;
-            border-radius: 0 0.75rem 0.75rem 0;
-            box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.05);
-            transition: transform 0.3s ease;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(226, 232, 240, 0.6);
+            border-left-width: 4px;
+        }
+        .answer-box::before {
+            content: '';
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: radial-gradient(circle at top right, rgba(14, 165, 233, 0.05), transparent 70%);
+            pointer-events: none;
         }
         .answer-box:hover {
-            transform: translateX(4px);
+            transform: translateX(8px) scale(1.01);
+            box-shadow: 0 15px 35px -5px rgba(14, 165, 233, 0.1);
         }
         
-        /* Image Container */
+        /* Image Container Enhanced */
         .img-container {
-            border-radius: 1rem;
+            border-radius: 1.25rem;
             overflow: hidden;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            border: 1px solid #f1f5f9;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(226, 232, 240, 0.8);
+            background: #ffffff;
+            transition: transform 0.5s ease, box-shadow 0.5s ease;
+            padding: 0.5rem;
+        }
+        .img-container img {
+            border-radius: 0.75rem;
+        }
+        .img-container:hover {
+            transform: scale(1.02) translateY(-5px);
+            box-shadow: 0 35px 60px -15px rgba(14, 165, 233, 0.2), 0 0 0 1px rgba(186, 230, 253, 0.8);
+        }
+        
+        /* Section Backgrounds */
+        .section-bg-gradient {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        }
+        .section-bg-gradient-alt {
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        }
+        
+        /* Custom Button */
+        .btn-primary {
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+            box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #0284c7, #2563eb);
         }
     </style>
 </head>
@@ -208,12 +313,12 @@
 
             <!-- CTA Buttons -->
             <div class="flex flex-col sm:flex-row justify-center gap-4 mt-8">
-                <a href="static/pdf/paper.pdf" target="_blank" class="group relative inline-flex items-center justify-center px-8 py-3.5 text-base font-semibold text-white transition-all duration-200 bg-slate-900 border border-transparent rounded-xl hover:bg-slate-800 hover:shadow-xl hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900">
-                    <i class="fas fa-file-pdf mr-2 transition-transform group-hover:scale-110"></i>
+                <a href="static/pdf/paper.pdf" target="_blank" class="group relative inline-flex items-center justify-center px-8 py-3.5 text-base font-semibold text-white transition-all duration-200 bg-slate-900 border border-transparent rounded-xl hover:bg-slate-800 hover:shadow-2xl hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 shadow-[0_10px_20px_rgba(0,0,0,0.1)]">
+                    <i class="fas fa-file-pdf mr-2 transition-transform group-hover:scale-110 text-red-400"></i>
                     Read Paper
                 </a>
-                <a href="https://github.com/666wula666/AClens" target="_blank" class="group relative inline-flex items-center justify-center px-8 py-3.5 text-base font-semibold text-slate-700 transition-all duration-200 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-xl hover:border-slate-300 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-200">
-                    <i class="fab fa-github mr-2 transition-transform group-hover:scale-110"></i>
+                <a href="https://github.com/666wula666/AClens" target="_blank" class="group relative inline-flex items-center justify-center px-8 py-3.5 text-base font-semibold text-slate-700 transition-all duration-200 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-2xl hover:border-slate-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-200 shadow-[0_10px_20px_rgba(0,0,0,0.05)]">
+                    <i class="fab fa-github mr-2 transition-transform group-hover:scale-110 text-slate-900"></i>
                     View Repository
                 </a>
             </div>
