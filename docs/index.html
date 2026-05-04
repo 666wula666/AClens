@@ -1,393 +1,551 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ACLens: Access Control Vulnerability Detection</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
-  
-  <style>
-    body {
-      font-family: 'Open Sans', sans-serif;
-      background-color: #fafafa;
-      color: #333333;
-      line-height: 1.7;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACLens: Access Control Vulnerability Detection</title>
     
-    h1, h2, h3, h4, h5, h6 {
-      font-family: 'Libre Baskerville', serif;
-      color: #1a1a1a;
-    }
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     
-    code {
-      font-family: 'Courier New', Courier, monospace;
-      background-color: #f4f4f4;
-      color: #b02727;
-      padding: 0.1em 0.3em;
-      border-radius: 3px;
-      font-size: 0.95em;
-    }
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    .hero.is-academic {
-      background-color: #ffffff;
-      border-bottom: 1px solid #eaeaea;
-      padding: 4rem 1.5rem;
-    }
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    .publication-title {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
-      color: #1a1a1a;
-      line-height: 1.3;
-    }
+    <!-- AOS Animation CSS -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     
-    .publication-authors { font-size: 1.2rem; color: #4a4a4a; margin-bottom: 1rem; }
-    .publication-venue { font-size: 1.1rem; color: #666; margin-bottom: 2rem; font-style: italic; }
-    
-    .section-title {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #2c3e50;
-      margin-bottom: 1.5rem;
-      margin-top: 3rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 2px solid #ecf0f1;
-    }
-    
-    .subsection-title {
-      font-size: 1.3rem;
-      font-weight: 600;
-      color: #34495e;
-      margin-top: 2rem;
-      margin-bottom: 1rem;
-    }
-    
-    .content p { margin-bottom: 1.2rem; text-align: justify; font-size: 1.05rem; }
-    
-    .content ul { margin-left: 2rem; margin-bottom: 1.5rem; list-style-type: square; }
-    .content li { margin-bottom: 0.5rem; text-align: justify; }
-    
-    .image-container {
-      text-align: center;
-      margin: 3rem 0;
-    }
-    
-    .image-container img { max-width: 100%; height: auto; border: 1px solid #ddd; padding: 5px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    .image-caption { color: #555; margin-top: 1rem; font-size: 0.95rem; text-align: justify; font-family: 'Libre Baskerville', serif; }
-    
-    .academic-table-container {
-      overflow-x: auto;
-      margin: 2.5rem 0;
-    }
-    
-    table.academic-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 0 auto;
-      font-size: 0.95rem;
-      text-align: center;
-    }
-    
-    table.academic-table th, table.academic-table td { padding: 10px 15px; }
-    
-    table.academic-table thead th {
-      border-top: 2px solid #333;
-      border-bottom: 1px solid #333;
-      font-weight: 600;
-      color: #1a1a1a;
-    }
-    
-    table.academic-table tbody tr:last-child td { border-bottom: 2px solid #333; }
-    table.academic-table tbody tr:nth-child(even) { background-color: #f9f9f9; }
-    
-    .answer-box {
-      background-color: #f0f7fa;
-      border-left: 4px solid #3498db;
-      padding: 1.5rem;
-      margin: 2rem 0;
-      border-radius: 0 4px 4px 0;
-      color: #2c3e50;
-      font-size: 1.05rem;
-    }
-    
-    .answer-box strong { color: #2980b9; font-family: 'Libre Baskerville', serif; }
-    
-    .button.is-academic {
-      background-color: #ecf0f1;
-      border: 1px solid #bdc3c7;
-      color: #2c3e50;
-      transition: all 0.2s;
-    }
-    
-    .button.is-academic:hover { background-color: #34495e; color: #fff; border-color: #34495e; }
-    
-    .footer { background-color: #fff; padding: 3rem 1.5rem; color: #666; border-top: 1px solid #eaeaea; margin-top: 4rem; }
-  </style>
+    <!-- Custom Config & Styles -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        },
+                        accent: {
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                        }
+                    },
+                    boxShadow: {
+                        'glass': '0 10px 40px -10px rgba(0,0,0,0.08)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #334155;
+            overflow-x: hidden;
+        }
+        
+        /* Particle Background Container */
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 1);
+        }
+        
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        /* Typography Highlights */
+        .text-gradient {
+            background: linear-gradient(135deg, #0369a1, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Table Styles */
+        .enterprise-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .enterprise-table th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #cbd5e1;
+            text-align: left;
+        }
+        .enterprise-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+            font-size: 0.95rem;
+        }
+        .enterprise-table tr:last-child td {
+            border-bottom: none;
+        }
+        .enterprise-table tbody tr {
+            transition: all 0.2s ease;
+        }
+        .enterprise-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+        .row-highlight {
+            background-color: #eff6ff !important;
+            font-weight: 600;
+            color: #1e3a8a !important;
+        }
+        .row-highlight td {
+            color: #1e3a8a;
+        }
+
+        /* Answer Callout Box */
+        .answer-box {
+            background: linear-gradient(to right, #f0f9ff, #ffffff);
+            border-left: 4px solid #0ea5e9;
+            border-radius: 0 0.75rem 0.75rem 0;
+            box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.05);
+            transition: transform 0.3s ease;
+        }
+        .answer-box:hover {
+            transform: translateX(4px);
+        }
+        
+        /* Image Container */
+        .img-container {
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid #f1f5f9;
+        }
+    </style>
 </head>
-<body>
+<body class="antialiased selection:bg-brand-200 selection:text-brand-900">
 
-<section class="hero is-academic">
-  <div class="hero-body has-text-centered">
-    <div class="container is-max-desktop">
-      <h1 class="publication-title">ACLens: Graph-Guided Multi-Agent Framework for Access Control Vulnerability Detection in Smart Contracts</h1>
-      <div class="publication-authors">
-        <span class="author-block">Anonymous Author(s)</span>
-      </div>
-      <div class="publication-venue">
-        The 41st IEEE/ACM International Conference on Automated Software Engineering (ASE 2026)
-      </div>
-      <div class="column has-text-centered">
-        <div class="publication-links">
-          <span class="link-block">
-            <a href="static/pdf/paper.pdf" target="_blank" class="button is-academic is-rounded">
-              <span class="icon"><i class="fas fa-file-pdf"></i></span>
-              <span>Paper PDF</span>
-            </a>
-          </span>
-          <span class="link-block">
-            <a href="https://github.com/666wula666/AClens" target="_blank" class="button is-academic is-rounded">
-              <span class="icon"><i class="fab fa-github"></i></span>
-              <span>Code Repository</span>
-            </a>
-          </span>
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass-nav transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="window.scrollTo(0,0)">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-accent-600 flex items-center justify-center shadow-lg">
+                        <i class="fas fa-shield-halved text-white text-sm"></i>
+                    </div>
+                    <span class="font-display font-bold text-xl text-slate-800 tracking-tight">ACLens</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#abstract" class="text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors">Abstract</a>
+                    <a href="#introduction" class="text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors">Introduction</a>
+                    <a href="#methodology" class="text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors">Methodology</a>
+                    <a href="#evaluation" class="text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors">Evaluation</a>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
+    </nav>
 
-<section class="section">
-  <div class="container is-max-desktop">
-    
-    <!-- Abstract -->
-    <h2 class="section-title">Abstract</h2>
-    <div class="content">
-      
+    <!-- Hero Section -->
+    <section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20 pb-12">
+        <div id="particles-js"></div>
+        
+        <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center" data-aos="zoom-in" data-aos-duration="1000">
+            <!-- Badges -->
+            <div class="flex flex-wrap justify-center gap-3 mb-8">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white text-brand-700 shadow-sm border border-brand-100 uppercase tracking-wide">
+                    <i class="fas fa-award mr-2"></i> ASE 2026
+                </span>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-white shadow-sm uppercase tracking-wide">
+                    <i class="fas fa-lock mr-2"></i> Smart Contract Security
+                </span>
+            </div>
+
+            <!-- Title -->
+            <h1 class="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6">
+                Graph-Guided Multi-Agent Framework for <br class="hidden lg:block">
+                <span class="text-gradient">Access Control Vulnerability Detection</span>
+            </h1>
+
+            <!-- Authors & Venue -->
+            <div class="space-y-4 mb-10">
+                <p class="text-lg md:text-xl text-slate-600 font-medium">
+                    Anonymous Author(s)
+                </p>
+                <p class="text-sm md:text-base text-slate-500 max-w-2xl mx-auto">
+                    The 41st IEEE/ACM International Conference on Automated Software Engineering
+                </p>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+                <a href="static/pdf/paper.pdf" target="_blank" class="group relative inline-flex items-center justify-center px-8 py-3.5 text-base font-semibold text-white transition-all duration-200 bg-slate-900 border border-transparent rounded-xl hover:bg-slate-800 hover:shadow-xl hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900">
+                    <i class="fas fa-file-pdf mr-2 transition-transform group-hover:scale-110"></i>
+                    Read Paper
+                </a>
+                <a href="https://github.com/666wula666/AClens" target="_blank" class="group relative inline-flex items-center justify-center px-8 py-3.5 text-base font-semibold text-slate-700 transition-all duration-200 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:shadow-xl hover:border-slate-300 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-200">
+                    <i class="fab fa-github mr-2 transition-transform group-hover:scale-110"></i>
+                    View Repository
+                </a>
+            </div>
+        </div>
+        
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <a href="#abstract" class="text-slate-400 hover:text-brand-500 transition-colors">
+                <i class="fas fa-chevron-down text-xl"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Main Content Wrapper -->
+    <div class="relative z-10 bg-slate-50">
+        
+        <!-- Abstract Section -->
+        <section id="abstract" class="py-20">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="glass-panel rounded-2xl p-8 md:p-12 shadow-glass" data-aos="fade-up">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-600">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h2 class="font-display text-3xl font-bold text-slate-800">Abstract</h2>
+                    </div>
+                    <div class="prose prose-slate prose-lg max-w-none text-slate-600 leading-relaxed">
+                        <p class="mb-4">Smart contracts are immutable, self-executing programs deployed on blockchains that typically manage substantial financial assets, making them a prime target for attackers. While Access Control (AC) vulnerabilities constitute the leading cause of financial loss, identifying them is increasingly challenging as authorization logic spans multiple functions with shared state variables and diverse business rules. Existing detectors are heavily dependent on guard pattern matching or sender taint analysis, but these methods frequently prove ineffective in the context of DeFi protocols. The root cause of such vulnerabilities is rarely the absence of guard patterns, but rather the exploitable reachability of privileged operations under unintended policies.</p>
+                        <p>Tackling this fundamental issue requires evaluating two distinct criteria, namely identifying which operations carry privileged effects and determining whether any feasible path can reach them in violation of the authorization policy implied by the contract's own protection patterns. In this work, we propose ACLens, a multi-agent framework guided by program graphs to conduct the analysis in two dedicated phases. The first phase performs deterministic graph analysis to pinpoint critical sinks and delineate a compact evidence boundary around them. The second phase deploys three agents to reconstruct an execution trace reaching each sink, infer the intended authorization policy from intra-contract evidence, and determine whether the reconstructed trace violates the inferred policy. On a DeFi exploit benchmark of 46 validated projects and 97 vulnerable functions, ACLens reaches 83.5% recall and 55.1% F1, outperforming the strongest baseline (i.e., ACTaint) by 46.4 points in recall and 20.0 points in F1.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Introduction Section -->
+        <section id="introduction" class="py-20 bg-white">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8" data-aos="fade-up">
+                <h2 class="font-display text-3xl font-bold text-slate-800 mb-8 flex items-center gap-3">
+                    <span class="text-brand-500">1.</span> Introduction
+                </h2>
+                <div class="text-slate-600 text-lg leading-relaxed space-y-6">
+                    <p>Decentralized finance (DeFi) protocols built on smart contracts now manage billions of dollars in total value locked. Because these contracts are immutable once deployed, a vulnerability cannot be patched and exploitation leads to irreversible financial losses. Among all vulnerability classes, access control (AC) defects are the most costly, arising when critical operations are executed without proper authorization. In 2024, access-control exploits accounted for 75% of all crypto hacks, with roughly $1.7 billion stolen. The 2025 OWASP Smart Contract Top 10 ranks AC vulnerabilities as the number-one threat.</p>
+                    
+                    <p>Unlike reentrancy or integer overflow, AC vulnerabilities depend on the developer's implicit intent rather than on language semantics. A public function that modifies the owner variable, for instance, is vulnerable only if the developer intended to restrict that operation. On standard benchmarks where each flaw is confined to a single function, specialized tools perform reasonably well. However, these benchmarks rarely mirror production DeFi contracts. This observation is further supported by our evaluation on a new DeFi benchmark under a strict function-level protocol, in which the best-performing baseline reaches only 37.1% recall on confirmed exploits.</p>
+                    
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 my-8">
+                        <p class="m-0 italic text-slate-700">"This performance gap indicates a structural limitation in existing detection methods. AC vulnerability detection begins by locating critical operations... The more challenging task lies in determining whether critical operations actually lack adequate protection."</p>
+                    </div>
+                    
+                    <p>Traditional tools address this challenge by verifying the presence of known guard patterns. In production DeFi contracts, however, authorization logic is rarely confined to standard modifiers or recognizable patterns. It emerges from intra-contract state relationships that are distributed across multiple functions and shared state variables, making it only partially visible to pattern-based analysis.</p>
+                    
+                    <p>LLM-based approaches have also been explored for AC detection. Applying them effectively, however, requires overcoming two obstacles inherent to AC vulnerabilities: (1) Authorization logic is structurally indistinguishable in standard program representations. (2) Vulnerability is defined against an implicit policy specific to the contract. LLMs can reason about open-ended policies, but without structured comparative evidence they cannot distinguish intentionally permissionless interfaces from accidentally unprotected ones.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Methodology Section -->
+        <section id="methodology" class="py-20 bg-slate-50 border-y border-slate-200">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16" data-aos="fade-up">
+                    <h2 class="font-display text-4xl font-bold text-slate-800 mb-4">2. Methodology</h2>
+                    <p class="text-xl text-slate-500 max-w-3xl mx-auto">A two-phase framework combining structural graph analysis with multi-agent semantic reasoning.</p>
+                </div>
+
+                <!-- Overview -->
+                <div class="mb-16 text-lg text-slate-600 leading-relaxed" data-aos="fade-up">
+                    <p class="mb-6">Despite the semantic complexity of access control (AC) rules, their structural evidence can be identified through dependency relationships before any semantic interpretation is required. Building on this insight, we propose ACLens, a multi-agent framework for detecting AC vulnerabilities in smart contracts, guided by program graphs.</p>
+                    <p>ACLens formulates AC detection as a two-phase process. In the first phase, <strong>Graph-Guided Structural Analysis</strong> leverages an Access Control Property Graph (ACPG) to identify critical sinks and extract a compact evidence boundary for each target function. In the second phase, <strong>Multi-Agent Security Reasoning</strong> decomposes the analysis across specialized agents: one reconstructs the execution trace leading to the sink, another infers the intended authorization policy from existing protection patterns in the contract, and a verifier determines whether the trace violates that policy.</p>
+                </div>
+
+                <!-- Architecture Image -->
+                <div class="mb-20" data-aos="fade-up" data-aos-delay="100">
+                    <div class="img-container bg-white p-4">
+                        <img src="static/images/methodology.png" alt="Methodology Overview" class="w-full h-auto rounded-lg">
+                    </div>
+                    <p class="text-center text-sm text-slate-500 mt-4 font-medium"><strong>Figure 1:</strong> Overview of the ACLens framework architecture.</p>
+                </div>
+
+                <!-- Subsections Grid -->
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- 2.1 -->
+                    <div class="bg-white rounded-2xl p-8 shadow-card border border-slate-100" data-aos="fade-right">
+                        <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-6 text-xl">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <h3 class="font-display text-2xl font-bold text-slate-800 mb-4">2.1 Structural Analysis</h3>
+                        <p class="text-slate-600 mb-6">Standard program graphs collapse all accesses to an indexed mapping into a single abstract location, obscuring the relationship between the key and the stored value. To address this, we design the <strong>Access Control Property Graph (ACPG)</strong>. The ACPG extends standard code property graphs with caller-dependent guard semantics and cross-function state links, enabling precise sink identification and compact evidence extraction via backward slicing.</p>
+                        <p class="text-slate-600">For each function, we extract a Sink-Conditioned Execution Environment (SCEE) around each critical sink by propagating relevance over the dependency edges. This ensures that the subsequent LLM reasoning phase is not overwhelmed by irrelevant contract code.</p>
+                    </div>
+
+                    <!-- 2.2 -->
+                    <div class="bg-white rounded-2xl p-8 shadow-card border border-slate-100" data-aos="fade-left">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-6 text-xl">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h3 class="font-display text-2xl font-bold text-slate-800 mb-4">2.2 Multi-Agent Reasoning</h3>
+                        <p class="text-slate-600 mb-6">Rather than exposing a single LLM to the entire contract, ACLens uses the extracted SCEE to power three specialized agents, orchestrating a comprehensive security review:</p>
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-brand-500 mt-1 mr-3"></i>
+                                <div><strong class="text-slate-800">Trace Generator:</strong> <span class="text-slate-600">Reconstructs a feasible execution trace from the function entry point to the critical sink.</span></div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-brand-500 mt-1 mr-3"></i>
+                                <div><strong class="text-slate-800">Policy Auditor:</strong> <span class="text-slate-600">Analyzes other functions to infer the developer's intended authorization policy.</span></div>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-brand-500 mt-1 mr-3"></i>
+                                <div><strong class="text-slate-800">Verifier:</strong> <span class="text-slate-600">Compares the generated trace against the inferred policy to make a final determination.</span></div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Evaluation Section -->
+        <section id="evaluation" class="py-20 bg-white">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16" data-aos="fade-up">
+                    <h2 class="font-display text-4xl font-bold text-slate-800 mb-4">3. Evaluation</h2>
+                    <p class="text-lg text-slate-500 max-w-2xl mx-auto">Rigorous testing on a comprehensive DeFi benchmark of 46 validated projects and 97 vulnerable functions.</p>
+                </div>
+
+                <!-- RQ1 -->
+                <div class="mb-20" data-aos="fade-up">
+                    <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 border-l-4 border-brand-500 pl-4">RQ1: Detection Effectiveness</h3>
+                    <p class="text-slate-600 text-lg mb-8">We evaluate ACLens against state-of-the-art baselines including Slither, Mythril, SPCon, AChecker, GPTLens, and ACTaint. The results demonstrate the superior performance of our approach.</p>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                        <div class="overflow-x-auto">
+                            <table class="enterprise-table">
+                                <thead>
+                                    <tr>
+                                        <th>Method</th>
+                                        <th>TP</th>
+                                        <th>FP</th>
+                                        <th>FN</th>
+                                        <th>Precision (%)</th>
+                                        <th>Recall (%)</th>
+                                        <th>F1 (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>Slither</td><td>8</td><td>22</td><td>89</td><td>26.7</td><td>8.2</td><td>12.6</td></tr>
+                                    <tr><td>Mythril</td><td>0</td><td>0</td><td>97</td><td>-</td><td>0.0</td><td>-</td></tr>
+                                    <tr><td>SPCon</td><td>1</td><td>0</td><td>96</td><td>100.0</td><td>1.0</td><td>2.0</td></tr>
+                                    <tr><td>AChecker</td><td>0</td><td>0</td><td>97</td><td>-</td><td>0.0</td><td>-</td></tr>
+                                    <tr><td>GPTLens</td><td>18</td><td>43</td><td>79</td><td>29.5</td><td>18.6</td><td>22.8</td></tr>
+                                    <tr><td>ACTaint</td><td>36</td><td>72</td><td>61</td><td>33.3</td><td>37.1</td><td>35.1</td></tr>
+                                    <tr class="row-highlight">
+                                        <td class="font-bold flex items-center gap-2"><i class="fas fa-star text-amber-400"></i> ACLens</td>
+                                        <td>81</td><td>116</td><td>16</td><td>41.1</td><td>83.5</td><td>55.1</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="answer-box p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
+                                <i class="fas fa-lightbulb text-brand-600 text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold text-slate-800 text-lg mb-2">Answer to RQ1</h4>
+                                <p class="text-slate-700 leading-relaxed">ACLens achieves <strong>83.5% recall</strong> and <strong>55.1% F1 score</strong> on the complex DeFi benchmark, outperforming the strongest specialized baseline (ACTaint) by 46.4 points in recall and 20.0 points in F1. This demonstrates that combining structural evidence extraction with semantic multi-agent reasoning effectively uncovers deeply hidden authorization flaws.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RQ2 -->
+                <div class="mb-20" data-aos="fade-up">
+                    <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 border-l-4 border-brand-500 pl-4">RQ2: Backbone Sensitivity</h3>
+                    <p class="text-slate-600 text-lg mb-8">We examine whether detection performance remains stable when the LLM backbone changes, testing with GPT-4o, GPT-4o-mini, and DeepSeek-R1.</p>
+                    
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                        <div class="overflow-x-auto">
+                            <table class="enterprise-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tool</th>
+                                        <th>Model</th>
+                                        <th>TP</th>
+                                        <th>FP</th>
+                                        <th>Precision (%)</th>
+                                        <th>Recall (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="bg-slate-50"><td class="font-semibold">ACLens</td><td>GPT-4o</td><td>81</td><td>116</td><td>41.1</td><td class="font-bold text-brand-700">83.5</td></tr>
+                                    <tr class="bg-slate-50"><td class="font-semibold">ACLens</td><td>GPT-4o-mini</td><td>79</td><td>119</td><td>39.9</td><td class="font-bold text-brand-700">81.4</td></tr>
+                                    <tr class="bg-slate-50 border-b-2 border-slate-300"><td class="font-semibold">ACLens</td><td>DeepSeek-R1</td><td>80</td><td>115</td><td>41.0</td><td class="font-bold text-brand-700">82.5</td></tr>
+                                    <tr><td>ACTaint</td><td>GPT-4o</td><td>36</td><td>72</td><td>33.3</td><td>37.1</td></tr>
+                                    <tr><td>ACTaint</td><td>GPT-4o-mini</td><td>42</td><td>427</td><td>9.0</td><td>43.3</td></tr>
+                                    <tr><td>ACTaint</td><td>DeepSeek-R1</td><td>39</td><td>118</td><td>24.8</td><td>40.2</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="answer-box p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
+                                <i class="fas fa-lightbulb text-brand-600 text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold text-slate-800 text-lg mb-2">Answer to RQ2</h4>
+                                <p class="text-slate-700 leading-relaxed">ACLens exhibits remarkable robustness across different LLM backbones. Even when using the smaller GPT-4o-mini model, ACLens maintains an 81.4% recall, dropping only 2.1 points from the GPT-4o baseline. This confirms that our graph-guided structural extraction successfully isolates the necessary evidence.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RQ3 & RQ4 Combined -->
+                <div class="grid md:grid-cols-2 gap-12" data-aos="fade-up">
+                    <div>
+                        <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 border-l-4 border-brand-500 pl-4">RQ3: Ablation Study</h3>
+                        <p class="text-slate-600 mb-6">Removing multi-agent reasoning reduces recall by 16.5 points. Disabling graph slicing causes precision and recall to drop, as agents struggle with long context. Removing deterministic sink identification drastically increases false positives.</p>
+                        <div class="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                            <h4 class="font-bold text-slate-800 mb-2"><i class="fas fa-check text-green-500 mr-2"></i> Conclusion</h4>
+                            <p class="text-sm text-slate-600">Every component of ACLens is essential. The integration of deterministic graph scoping and semantic role-playing creates a highly synergistic detection mechanism.</p>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 border-l-4 border-brand-500 pl-4">RQ4: Scoping Efficiency</h3>
+                        <p class="text-slate-600 mb-6">We measured how graph-guided slicing changes the input that reaches phase two. Across all functions in the DeFi dataset, SCEEs drastically reduced the token count.</p>
+                        <div class="bg-brand-50 rounded-xl p-5 border border-brand-200">
+                            <h4 class="font-bold text-brand-900 mb-2"><i class="fas fa-bolt text-amber-500 mr-2"></i> Massive Reduction</h4>
+                            <p class="text-sm text-brand-800">Graph-guided structural analysis reduces the average input context from over <strong>6,300 tokens</strong> (full contract) to just <strong>92 tokens</strong> per function, lowering API costs and improving focus.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
     </div>
 
-    <!-- Introduction -->
-    <h2 class="section-title">1. Introduction</h2>
-    <div class="content">
-      <p>Decentralized finance (DeFi) protocols built on smart contracts now manage billions of dollars in total value locked [1].
-Because these contracts are immutable once deployed, a vulnerability cannot be patched and exploitation leads to irreversible financial losses [1].
-Among all vulnerability classes, <em>access control (AC) defects</em> are the most costly, arising when critical operations are executed without proper authorization.
-In 2024, access-control exploits accounted for 75% of all crypto hacks, with roughly $1.7 billion stolen [1]. The 2025 OWASP Smart Contract Top 10 ranks AC vulnerabilities as the number-one threat [1].</p>
-<p>Unlike reentrancy or integer overflow, AC vulnerabilities depend on the developer's implicit intent rather than on language semantics. A public function that modifies the <code>owner</code> variable, for instance, is vulnerable only if the developer intended to restrict that operation. On CVE-style benchmarks where each flaw is confined to a single function, specialized tools perform reasonably well. AChecker [1] and ACTaint [1] achieve 80% and 93.3% recall, respectively. However, these benchmarks rarely mirror production DeFi contracts. This observation is further supported by our evaluation on a new DeFi benchmark under a strict function-level protocol (Section X), in which the best-performing baseline reaches only 37.1% recall on confirmed exploits.</p>
-<p>This performance gap indicates a structural limitation in existing detection methods. AC vulnerability detection begins by locating critical operations (e.g., external transfers, privileged state writes, and self-destruction), relying mostly on structural patterns. The more challenging task lies in determining whether critical operations actually lack adequate protection. Traditional tools address this challenge by verifying the presence of known guard patterns. Although some advanced systems [1] incorporate techniques such as guard pattern matching and sender taint analysis, they still validate primarily against predefined protection mechanisms. In production DeFi contracts, however, authorization logic is rarely confined to standard modifiers or recognizable patterns. It emerges from intra-contract state relationships that are distributed across multiple functions and shared state variables, making it only partially visible to pattern-based analysis.</p>
-<p>LLM-based approaches have also been explored for AC detection [1]. Applying them effectively, however, requires overcoming two obstacles inherent to AC vulnerabilities.
-<strong>C1: Authorization logic is structurally indistinguishable in standard program representations.</strong> In conventional program graphs, guards that depend on the caller are encoded identically to ordinary business predicates, and all accesses to the same indexed state variable collapse into a single abstract location regardless of their index keys. As a result, no structural signal separates an authorization check from an arithmetic bound or a balance lookup. This absence undermines the validity of any analysis relying on such representations. Besides, providing the entire contract to an LLM obscures authorization signals amidst irrelevant code [1], whereas slicing along standard dependence edges fails to preserve cross-function state relationships. In both cases, the pivotal evidence necessary for determining AC vulnerabilities is lost.
-<strong>C2: Vulnerability is defined against an implicit policy specific to the contract.</strong> Certain common vulnerabilities, such as reentrancy and integer overflow, stem from violations of language-level semantics that can be defined independently of any specific contract. AC violations, by contrast, are meaningful only relative to an authorization policy that the developer rarely specifies explicitly. Traditional detectors reduce this ambiguity to closed-world pattern matching. LLMs can reason about open-ended policies, but without structured comparative evidence they cannot distinguish intentionally permissionless interfaces from accidentally unprotected ones.</p>
-<p>Despite the semantic complexity of access control (AC) rules, their structural evidence can be identified through dependency relationships before any semantic interpretation is required. Building on this insight, we propose ACLens, a multi-agent framework for detecting AC vulnerabilities in smart contracts, guided by program graphs. Concretely, ACLens formulates AC detection as a two-phase process. In the first phase, Graph-Guided Structural Analysis leverages an Access Control Property Graph (ACPG) to identify critical sinks and extract a compact evidence boundary for each target function. In the second phase, Multi-Agent Security Reasoning decomposes the analysis across specialized agents: one reconstructs the execution trace leading to the sink, another infers the intended authorization policy from existing protection patterns in the contract, and a verifier determines whether the trace violates that policy. Rather than exposing each reasoning agent to the entire contract, ACLens uses dependency graphs to define a per-function evidence boundary prior to any semantic analysis. Our evaluation on a DeFi benchmark comprising 46 validated projects (Section X) shows that this decomposition achieves 83.5% recall and 55.1% F1, surpassing the strongest specialized baseline by 46.4 in recall and 20.0 in F1 score. In summary, this work makes the following contributions.</p>
-<ul>[leftmargin=*,nosep]
-    <li>We propose ACLens, a multi-agent framework for AC vulnerability detection in smart contracts that combines graph-guided structural localization with multi-agent policy reasoning. To the best of our knowledge, this is the first work to leverage program graph analysis to delimit the evidence scope for each critical sink, thereby enabling more effective multi-agent reasoning for AC vulnerability detection.
-    </li><li>In ACLens, we design an Access Control Property Graph (ACPG) that extends standard code property graphs with caller-dependent guard semantics and cross-function state links, enabling precise sink identification and compact evidence extraction via backward slicing.
-    </li><li>We evaluate ACLens on a DeFi benchmark of 46 projects spanning six chains. Under a strict function-level protocol over confirmed exploit cases, ACLens achieves 83.5% recall and 55.1% F1, more than doubling the recall of the best-performing specialized baseline (37.1%) while maintaining competitive precision.
-</li></ul>
-    </div>
+    <!-- Footer -->
+    <footer class="bg-slate-900 py-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-accent-600 flex items-center justify-center">
+                    <i class="fas fa-shield-halved text-white text-sm"></i>
+                </div>
+                <span class="font-display font-bold text-xl text-white tracking-tight">ACLens Framework</span>
+            </div>
+            <div class="text-slate-400 text-sm text-center md:text-right">
+                <p>&copy; 2026 Anonymous Author(s). All rights reserved.</p>
+                <p class="mt-1">Datasets and code available on <a href="https://doi.org/10.5281/zenodo.19220416" class="text-brand-400 hover:text-brand-300 transition-colors underline decoration-brand-500/30 underline-offset-2">Zenodo</a>.</p>
+            </div>
+        </div>
+    </footer>
 
-    <!-- Methodology -->
-    <h2 class="section-title">2. Methodology</h2>
-    <div class="content">
-      
-    </div>
-    
-    <div class="image-container">
-      <img src="static/images/methodology.png" alt="Methodology Overview">
-      <p class="image-caption"><strong>Figure 1:</strong> Overview of the ACLens framework. Phase 1 performs structural analysis guided by the program graph to construct the ACPG, identify critical sinks, and extract Sink-Conditioned Execution Environments (SCEEs). Phase 2 performs multi-agent security reasoning.</p>
-    </div>
+    <!-- Scripts -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        // Initialize Animate On Scroll
+        AOS.init({
+            once: true,
+            offset: 50,
+            duration: 800,
+            easing: 'ease-out-cubic',
+        });
 
-    <h3 class="subsection-title">2.1 Graph-Guided Structural Analysis</h3>
-    <div class="content">
-      <p>Passing the full contract to phase two would obscure authorization logic among irrelevant code, while naive slicing on a standard dependency graph would discard the cross-function state flows that AC judgment depends on. Graph-guided structural analysis addresses both requirements through three steps: ACPG construction, critical sink identification, and relevance-guided context slicing.</p>
-<p>We first construct a Code Property Graph (CPG) [1] from Slither's [1] parsing results. The CPG jointly encodes control flow, data dependence, and control dependence over program statements, allowing downstream analysis to simultaneously trace execution paths, data flows, and branching conditions within one structure.</p>
-<p>For AC analysis, two aspects of a standard CPG remain implicit. First, the authorization semantics is implicit. For example, predicates that enforce authorization, such as the one in <code>require(msg.sender == owner)</code>, are represented in the same way as ordinary predicates like <code>amount > 0</code>. Second, a standard CPG treats all accesses to the same mapping variable as equivalent, regardless of which key is used. It cannot distinguish whether two functions reading and writing <code>balances</code> operate on the same entry or on entirely different ones. This prevents the analysis from tracking how a state change in one function affects the data that another function reads or guards, which is essential for detecting cross-function AC vulnerabilities. These two gaps motivate the ACPG's extensions.</p>
-<p>The first extension encodes guard semantics. A conditional check qualifies as an <em>authorization guard</em> for a downstream operation if its predicate depends on the caller's identity, whether directly or through transitive data flow, and if it dominates the operation in the control-flow graph, i.e., every path from the function entry to that operation passes through the check.</p>
-<p>In Solidity, the primary on-chain sources of caller identity are <code>msg.sender</code> and <code>tx.origin</code>. Our implementation tracks transitive dependencies from these two primitives via Slither's data-flow analysis. Authorization guards take the form of inline <code>require</code> statements, <code>if</code> branches, or modifier bodies that encapsulate such checks. When both criteria are met, the ACPG records an $E_{role}$ edge from the guard to the protected operation, allowing later stages to directly query whether a given operation is protected by an authorization guard.</p>
-<p>The second extension resolves cross-function state connections at the mapping-key level. Mapping variables in DeFi contracts serve as shared accounting structures across multiple principals, yet a standard CPG treats every access to the same mapping identically regardless of the index key used. AC analysis needs only to determine whether each access targets the caller's own entry or a different principal's. The ACPG answers this through a <em>symbolic key</em> attached to each mapping access, a tuple recording the provenance of each index expression. For instance, <code>balances[msg.sender]</code> carries the key $\langle<em>sender</em>\rangle$, while <code>allowances[msg.sender][spender]</code> with parameter <code>spender</code> carries $\langle<em>sender</em>,\;<em>param\text{:}spender</em>\rangle$.</p>
-<p>When a symbolic key contains parameter references, the analysis resolves each by following interprocedural call edges ($E_{call}$) until a concrete origin (e.g., <code>msg.sender</code>) or a public entry point is reached. The analysis then aligns write and read keys for the same variable and compares their origins at each index level. Matching origins yield high confidence, distinct parameter sources yield medium, and unresolved locals yield low; incompatible origins (e.g., <em>sender</em> vs.\ a constant) produce no edge. The minimum confidence across positions scales the $E_{state}$ edge weight as $w = 0.9 \times c$ ($c \in \{1.0, 0.67, 0.33\}$), so <code>balances[msg.sender]</code> in one function connects at weight 0.9 to the same entry elsewhere while unrelated accesses remain disconnected. Figure X illustrates these connections on XBridge (Section X).</p>
-<p>The resulting ACPG encodes the structural evidence that subsequent analysis builds on. Sink identification (Section X) queries these edges to locate control variables and determine whether each sink is guarded, while context slicing (Section X) uses the edge weights to extract code regions that preserve the security-relevant context for downstream reasoning.</p>
-<p>Given the ACPG, the next step is to determine <em>which</em> operations in a contract require authorization. We call an operation a <em>critical sink</em> if an unauthorized execution would violate at least one contract-level security invariant. A security invariant here refers to a property the contract should maintain throughout normal operation, whose violation leads to irreversible security consequences.</p>
-<p>\begin{definition}[Critical Sink]
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 20) {
+                nav.classList.add('shadow-sm');
+                nav.style.background = 'rgba(255, 255, 255, 0.85)';
+            } else {
+                nav.classList.remove('shadow-sm');
+                nav.style.background = 'rgba(255, 255, 255, 0.7)';
+            }
+        });
 
-Given an ACPG $G_{AC}$, an operation node $s \in V$ is a critical sink if there exists a security invariant $I \in \{\textsc{Governance}, \textsc{Asset}, \textsc{Authorization}\}$ such that an unprivileged caller performing $s$ would violate $I$:</p>
-<p>where $c_{\bot}$ models a caller that holds no privileged role in the contract, and $<em>effect</em>(s, c_{\bot})$ denotes the post-state that results from executing $s$ under caller $c_{\bot}$, assuming $s$ is reached regardless of any guards on the enclosing path. This identifies operations whose uncontrolled execution would be harmful; whether the guards currently in place enforce an adequate policy is assessed separately during policy inference (Section X).
-\end{definition}</p>
-<p>Analyzing documented DeFi incidents [1], we classify the damage from uncontrolled execution into three security invariants. \textsc{Governance} covers operations that alter the contract's own access policy. \textsc{Asset} covers external calls and value transfers that cause direct financial loss. \textsc{Authorization} covers writes to shared state affecting other users' funds or permissions, pervasive in DeFi's <code>mapping</code>-based accounting but largely unaddressed by existing tools [1]. We instantiate these invariants into six sink categories based on the Solidity operations that can violate them (Table X).</p>
-<p>S1, S3, S4, and S5 correspond to operations recognized in prior AC analysis [1]. S2 and S6 are enabled by the ACPG extensions from Section X. For S2, guard edges ($E_{role}$) provide a structural alternative to heuristic name matching [1]. A state variable read at the source of a guard edge is governance-relevant, so writes to it are classified as S2 sinks. For S6, key-resolved state edges ($E_{state}$) distinguish whether a <code>mapping</code> write targets the caller's own entry or another user's, capturing cross-user mutations that standard representations lack the precision to detect [1].</p>
-<p>Before enumeration, we exclude entry points whose access is fixed by the execution model or limited to caller-local effects, such as constructors, fallbacks, and standard inherited token wrappers. After enumeration, we query the ACPG to determine whether a guard dominates each sink, provisionally marking it as <em>unguarded</em>, <em>guarded</em>, or <em>excluded</em>. Whether existing guards enforce the intended policy is assessed in Section X.</p>
-<p>Classical program slicing [1] on a standard CPG does not distinguish authorization guards from ordinary predicates, nor does it track state flows at the mapping key level. Slices derived from such a graph may therefore omit the cross-function guard conditions and index-sensitive state connections that AC judgment requires. Because the ACPG already encodes these relationships as typed, weighted edges (Section X), we define a relevance-guided slicing procedure over this structure.</p>
-<p>For each function $f$, let $\mathcal{S}_f \subseteq \mathcal{S}_{<em>crit</em>}$ denote the critical sinks within $f$ identified in Section X. We extract a <em>Sink-Conditioned Execution Environment</em> (SCEE) around each sink by propagating relevance over the dependency edge set $E_{dep} = \{e \in E \mid w(e) > 0\}$. This set retains all ACPG edges that carry dependency semantics, excluding structural edges with zero weight (control-flow and post-dominator).</p>
-<p>Edge weights reflect how directly each edge type encodes authorization semantics. Guard and modifier edges carry the highest weight ($w{=}1.0$) as they represent explicit permission checks. State edges rank second, scaled by the key alignment confidence from Section X. Other dependency edges carry lower weights proportional to their indirect contribution. We formulate the slicing as a maximum product path problem on a priority queue. Each sink starts with relevance 1.0, and relevance decays multiplicatively along edges. The optimal relevance of a node $v$ satisfies</p>
-<p>with base case $<em>rel</em>(s) = 1$ for all $s \in \mathcal{S}_f$. Here $\alpha = 0.85$ is the per-hop decay factor, and $\hat{w}(v,u) = \max_{e \in <em>par</em>(v,u)} w(e)$ selects the highest weight among parallel edges connecting $v$ and $u$ in the multigraph. The first term propagates relevance backward from sinks along dependency edges, collecting predecessor nodes that supply AC context. The second term extends propagation forward along state edges, because whether a state write constitutes a vulnerability depends in part on how downstream code reads or guards that variable. Nodes whose relevance falls below a threshold $\tau = 0.05$ are pruned; the resulting SCEE comprises all surviving nodes. Algorithm X gives the complete procedure.</p>
-<p>\algrenewcommand{\algorithmiccomment}[1]{\hfill// #1}</p>
-<p>The algorithm follows Dijkstra-style relaxation on a max-product semiring, computing optimal relevance in $O((|V|{+}|E|)\log|V|)$ time. With $\alpha{=}0.85$ and $\tau{=}0.05$, a path of weight-1.0 edges (guard, modifier, or role edges) retains relevance above $\tau$ for up to 18 hops ($0.85^{18}{\approx}0.054$), while a path of call edges (weight 0.5) drops below $\tau$ at hop 4 ($0.425^{4}{\approx}0.033$). The weight assignment biases the SCEE toward nodes connected to the sink through edges that encode permission semantics, while nodes reachable only via low-weight indirect paths are excluded.</p>
-<p><em>Running example.</em>\ On XBridge (Figure X), ACPG construction links the <code>\_tokenOwner</code> write in <code>listToken</code> to the downstream read in <code>withdrawTokens</code>. Sink identification marks this write as S2 (\textsc{Governance}) and the <code>transfer</code> in <code>withdrawTokens</code> as S1 (\textsc{Asset}). Guard verification classifies <code>withdrawTokens</code> as \textsc{Guarded} and <code>listToken</code> as \textsc{Unguarded}. Starting from these sinks, relevance-guided slicing retains the full state chain from the <code>\_tokenOwner</code> write to its guard read, while auxiliary operations with no dependency path to either sink fall below $\tau$ and are excluded.</p>
-    </div>
-    
-    <div class="image-container">
-      <img src="static/images/example.png" alt="ACPG Graph">
-      <p class="image-caption"><strong>Figure 2:</strong> Access Control Property Graph (ACPG) capturing cross-function dependencies and mapping-key levels.</p>
-    </div>
-
-    <h3 class="subsection-title">2.2 Multi-Agent Security Reasoning</h3>
-    <div class="content">
-      <p>Once phase one fixes the evidence boundary, the analysis must determine whether each critical operation is adequately protected under an authorization policy that the contract never explicitly states. Phase two assigns this judgment to three agents with separated responsibilities. The Trace Reconstructor ($A_{trace}$) reconstructs the execution trace reaching each sink within the SCEE. The Auditor ($A_{audit}$) infers the intended authorization policy for the target function. The Verifier ($A_{verify}$) judges whether the reconstructed trace violates the inferred policy and whether its effect extends beyond the caller's own state. This separation prevents a single model from anchoring on its initial interpretation and propagating bias into downstream judgments. Section X quantifies the effect.</p>
-<p>In Solidity, authorization is enforced primarily through modifiers attached to the function signature and through <code>require</code> statements placed before the function body's first branch [1]. Prior AC detectors also target these two mechanisms [1]. Both mechanisms execute at function entry and therefore dominate every subsequent node in the control-flow graph. If no guard exists at function entry, every path from entry to the sink is equally unprotected. This structural property distinguishes AC vulnerabilities from reentrancy [1] or transaction ordering dependence [1], where exploitable behavior emerges only under specific execution interleavings. Because the absence of an entry-level guard is path-independent, a single verified trace that reaches the sink without encountering an adequate guard constitutes a sufficient vulnerability witness. $A_{trace}$ therefore reconstructs, for each critical sink identified in Section X, exactly one execution trace from the function's externally reachable entry point to the sink within the SCEE (Section X formalizes the sufficiency condition in eq. (X)).</p>
-<p>The reconstruction follows a five-step protocol (Figure X) that walks forward from function entry to the target sink, accumulating path conditions and tracking how the caller's identity propagates into guards and sink operands. The protocol concludes with a feasibility check confirming that the accumulated path condition is satisfiable. Each step in the output trace is anchored to a specific code fragment in the SCEE. A deterministic validator then confirms that each referenced fragment exists in the SCEE, that consecutive steps are connected in the control-flow graph, and that the overall path is reachable from the entry point. Traces that fail any check are returned to $A_{trace}$ for reconstruction, with up to two retries. Because the SCEE has already narrowed the reasoning scope, 89.1% of sinks pass validation on the first attempt.</p>
-<p>The Auditor infers an authorization policy $\mathcal{P}_f^* = (\mathcal{A}_f, \Phi_f)$ for each function $f$ that contains at least one sink identified in Section X, where $\mathcal{A}_f \in \{<em>Public</em>, <em>Owner</em>, <em>Role</em>, <em>DAO</em>\}$ specifies the required caller class and $\Phi_f$ lists the state preconditions that must hold before execution. The granularity is per function rather than per sink, because Solidity guards are enforced at function entry (Section X) and all sinks within the same function therefore share the same authorization boundary. Within a single contract, developers typically protect operations with similar security implications in a similar way. Deviations from such recurring patterns have been shown to be a reliable signal for latent defects in prior work on inconsistency-based bug detection [1], and SPCon [1] confirmed this regularity for access control in smart contracts.</p>
-<p>To exploit this regularity, $A_{audit}$ compares the target function against structurally similar <em>peer functions</em> from the same contract. It receives four inputs (Figure X): the target function's source, contract-level context (state variable declarations and modifier definitions), a ranked set of peers, and the graph annotations produced by phase one (per-sink guard status, control-variable alerts, and cross-user write flags from Section X). Peers are selected based on structural overlap that the ACPG makes observable in three forms: (1) shared writes to variables in $\mathcal{V}_{crit}$ (sink operands $\cup$ control variables from Section X), (2) sinks classified under the same security invariant (Table X), and (3) shared modifiers or guard predicates referencing the same role variable. Candidates with more overlapping signals rank higher. When two or more top-ranked peers enforce caller identity guards while the target lacks equivalent protection, the asymmetry constitutes evidence of a missing restriction rather than a deliberate design choice. Conversely, when all comparable peers are uniformly permissionless or scoped to the caller's own state, the target is presumed open by design. If fewer than two peers are available or their patterns conflict, the Auditor lowers its confidence and relies primarily on graph annotations as supplementary evidence.</p>
-<p>Given the traces from $A_{trace}$, the inferred policy from $A_{audit}$, and the contract context, the Verifier determines their alignment. For a given sink $s$ with locally validated trace set $\mathcal{T}_s$ and inferred policy $\mathcal{P}^*_f$, we write $\mathsf{NonLocal}(T)$ for traces whose effects are not confined to caller-local state. The positive judgment is expressed in eq. (X).</p>
-<p>where $T \not\models \mathcal{P}_f^*$ means that the trace violates the inferred caller class or state preconditions for $f$. $\mathsf{NonLocal}(T)$ holds when the trace affects shared or protocol-level state rather than only caller-local entries. This includes writes to governance and configuration variables, to aggregate accounting state, to <code>mapping</code> entries whose effective principal is not bound to <code>msg.sender</code> or to a parameter already constrained to equal <code>msg.sender</code>, and external asset transfers directed to recipients not bound to the caller. The second conjunct ensures that ACLens does not flag caller-only self-service behavior as a vulnerability. A single verified violating trace suffices for a positive finding; exhausting remaining branches is unnecessary. When neither condition triggers, $A_{verify}$ conservatively outputs \textsc{Unknown}. Constraining the Verifier to trace-policy alignment also prevents it from re-inferring the policy or hypothesizing attack scenarios unsupported by its inputs. Figure X excerpts the core instructions.</p>
-<p><em>Running example.</em>\ On XBridge, the Auditor notes that <code>withdraw\-Tokens</code> guards writes to <code>\_token\-Owner</code> with a caller identity check, and infers the same policy for <code>list\-Token</code> ($\mathcal{A}_f = <em>Owner</em>$). The reconstructed trace reaches the <code>\_token\-Owner</code> overwrite without any such check. Since <code>\_token\-Owner</code> also governs fund withdrawal in <code>withdraw\-Tokens</code>, the Verifier confirms both conjuncts of eq. (X) and reports \textsc{Vulnerable}.</p>
-    </div>
-
-    <!-- Evaluation -->
-    <h2 class="section-title">3. Evaluation</h2>
-    <h3 class="subsection-title">Experimental Setup & Benchmarks</h3>
-    <div class="content">
-      <p>All LLM agents return JSON-formatted outputs. We set temperature to 0 and fix the random seed to 42, following standard practice in LLM-based vulnerability detection [1]. Each benchmark project is processed end-to-end without manual intervention. Under these settings the pipeline produces identical outputs for identical inputs. All experiments ran on a MacBook Pro with Apple M3 Max.</p>
-<p><strong>Metrics.</strong>
-Following ACTaint [1] and AChecker [1], we report TP, FP, FN, Recall $R$, and F1. We adopt a strict <em>function-level</em> evaluation protocol. For function-level evaluation on the DeFi set, a reported function counts as TP only when it independently exposes an exploitable root cause consistent with the incident. Functions that do not meet this criterion count as FP, and unmatched benchmark functions count as FN.</p>
-      <p>Our evaluation uses two complementary benchmarks: <strong>CVE</strong>, the 15-contract CVE dataset widely adopted in prior work [1], and <strong>DeFi</strong>, a benchmark we construct from confirmed on-chain DeFi AC exploits from 2017 to 2024. CVE covers classic single-function patterns on which existing tools already achieve high recall (ACTaint: 93.3%). The DeFi dataset targets production DeFi contracts with cross-function authorization logic, where AC exploits cause the largest share of financial losses [1] yet remain largely undetected.</p>
-<p><strong>DeFi.</strong>
-We screen all incidents in DeFiHackLabs [1] through 2024 and retain those whose root cause is an AC vulnerability and whose source code is verified on-chain. This yields 54 confirmed exploits across six chains, covering 750 contract, library, and interface definitions totaling 85.6 KLoC. We then exclude 8 cases that are not genuine AC flaws, such as Merkle-guarded mints and intentionally permissionless routers. The remaining set contains 46 validated projects.</p>
-<p>To establish function-level ground truth, two researchers with over three years of smart contract auditing experience independently reviewed each project. For every case they traced the on-chain exploit transaction, identified the root-cause function(s), and annotated all functions whose unguarded state independently enables the exploit. Disagreements were resolved through joint re-examination of exploit traces and contract state transitions, producing a final set of 97 vulnerable functions across the dataset.</p>
-    </div>
-
-    <h3 class="subsection-title">RQ1: Detection Effectiveness</h3>
-    <div class="content">
-      <p>We evaluate ACLens on CVE datasets and our constructed DeFi benchmark against state-of-the-art baselines. ACLens effectively detects vulnerabilities that other tools miss, primarily due to its combination of precise structural extraction and semantic agent reasoning.</p>
-    </div>
-
-    <div class="academic-table-container">
-      <table class="academic-table">
-        <thead>
-          <tr>
-            <th style="text-align: left;">Method</th>
-            <th>TP</th>
-            <th>FP</th>
-            <th>FN</th>
-            <th>Precision (%)</th>
-            <th>Recall (%)</th>
-            <th>F1 (%)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td style="text-align: left;">Slither</td><td>8</td><td>22</td><td>89</td><td>26.7</td><td>8.2</td><td>12.6</td></tr>
-          <tr><td style="text-align: left;">Mythril</td><td>0</td><td>0</td><td>97</td><td>-</td><td>0.0</td><td>-</td></tr>
-          <tr><td style="text-align: left;">SPCon</td><td>1</td><td>0</td><td>96</td><td>100.0</td><td>1.0</td><td>2.0</td></tr>
-          <tr><td style="text-align: left;">AChecker</td><td>0</td><td>0</td><td>97</td><td>-</td><td>0.0</td><td>-</td></tr>
-          <tr><td style="text-align: left;">GPTLens</td><td>18</td><td>43</td><td>79</td><td>29.5</td><td>18.6</td><td>22.8</td></tr>
-          <tr><td style="text-align: left;">ACTaint</td><td>36</td><td>72</td><td>61</td><td>33.3</td><td>37.1</td><td>35.1</td></tr>
-          <tr style="font-weight: bold;">
-            <td style="text-align: left;">ACLens</td><td>81</td><td>116</td><td>16</td><td>41.1</td><td>83.5</td><td>55.1</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="image-caption" style="text-align: center;"><strong>Table 1:</strong> Detection performance on the DeFi dataset.</div>
-    </div>
-    
-    <div class="answer-box">
-      <p><strong>Answer for RQ1:</strong> ACLens detects all 15 CVE cases and 81 of 97 DeFi dataset functions, outperforming the strongest baseline by 46.4 recall points and 20.0 F1 points. The additional detections are predominantly unguarded entry points where no taint path exists for prior tools to evaluate.</p>
-    </div>
-
-    <h3 class="subsection-title">RQ2: Phase-Two Backbone Sensitivity</h3>
-    <div class="content">
-      <p>We examine whether detection performance remains stable when the LLM backbone changes. We test with GPT-4o, GPT-4o-mini, and DeepSeek-R1.</p>
-    </div>
-
-    <div class="academic-table-container">
-      <table class="academic-table">
-        <thead>
-          <tr>
-            <th style="text-align: left;">Tool</th>
-            <th>Model</th>
-            <th>TP</th>
-            <th>FP</th>
-            <th>Precision (%)</th>
-            <th>Recall (%)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td style="text-align: left;">ACLens</td><td>GPT-4o</td><td>81</td><td>116</td><td>41.1</td><td>83.5</td></tr>
-          <tr><td style="text-align: left;">ACLens</td><td>GPT-4o-mini</td><td>79</td><td>119</td><td>39.9</td><td>81.4</td></tr>
-          <tr><td style="text-align: left;">ACLens</td><td>DeepSeek-R1</td><td>80</td><td>115</td><td>41.0</td><td>82.5</td></tr>
-          <tr><td style="text-align: left;">ACTaint</td><td>GPT-4o</td><td>36</td><td>72</td><td>33.3</td><td>37.1</td></tr>
-          <tr><td style="text-align: left;">ACTaint</td><td>GPT-4o-mini</td><td>42</td><td>427</td><td>9.0</td><td>43.3</td></tr>
-          <tr><td style="text-align: left;">ACTaint</td><td>DeepSeek-R1</td><td>39</td><td>118</td><td>24.8</td><td>40.2</td></tr>
-        </tbody>
-      </table>
-      <div class="image-caption" style="text-align: center;"><strong>Table 2:</strong> Performance comparison across different LLM backbones.</div>
-    </div>
-
-    <div class="answer-box">
-      <p><strong>Answer for RQ2:</strong> Swapping the backbone moves ACLens's recall by at most 2.1 percentage points and its false-positive count by at most 4. ACTaint fluctuates much more, with false positives rising from 72 to 427 under GPT-4o-mini.</p>
-    </div>
-
-    <h3 class="subsection-title">RQ3: Phase Contribution (Ablation Study)</h3>
-    <div class="content">
-      <p>We build three ablation variants and evaluate them on the DeFi dataset with GPT-4o to understand the contribution of multi-agent reasoning, graph slicing, and sink identification.</p>
-    </div>
-
-    <div class="image-container">
-      <img src="static/images/ablation.png" alt="Ablation Results" style="max-width: 80%;">
-      <p class="image-caption"><strong>Figure 3:</strong> TP and FP counts in the ablation study.</p>
-    </div>
-
-    <div class="academic-table-container">
-      <table class="academic-table">
-        <thead>
-          <tr>
-            <th style="text-align: left;">Configuration</th>
-            <th>TP</th>
-            <th>FP</th>
-            <th>FN</th>
-            <th>Precision (%)</th>
-            <th>Recall (%)</th>
-            <th>F1 (%)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="font-weight: bold;">
-            <td style="text-align: left;">Full two-phase system</td><td>81</td><td>116</td><td>16</td><td>41.1</td><td>83.5</td><td>55.1</td>
-          </tr>
-          <tr><td style="text-align: left;">w/o multi-agent</td><td>65</td><td>87</td><td>32</td><td>42.8</td><td>67.0</td><td>52.2</td></tr>
-          <tr><td style="text-align: left;">w/o graph slicing</td><td>77</td><td>119</td><td>20</td><td>39.3</td><td>79.4</td><td>52.6</td></tr>
-          <tr><td style="text-align: left;">w/o sink identification</td><td>81</td><td>429</td><td>16</td><td>15.9</td><td>83.5</td><td>26.7</td></tr>
-        </tbody>
-      </table>
-      <div class="image-caption" style="text-align: center;"><strong>Table 3:</strong> Performance comparison in the ablation study.</div>
-    </div>
-
-    <div class="answer-box">
-      <p><strong>Answer for RQ3:</strong> Each component addresses a distinct failure mode. Removing multi-agent reasoning drops recall by 16.5 pp; removing graph slicing drops recall by 4.1 pp on large contracts; removing sink identification inflates false positives from 116 to 429. All three variants fall below the full system's 55.1% F1.</p>
-    </div>
-
-    <h3 class="subsection-title">RQ4: Scoping Efficiency and Cost</h3>
-    <div class="content">
-      <p>We measure how graph-guided slicing changes the input that reaches phase two. Across all functions in the DeFi dataset projects, SCEEs drastically reduce the token count, improving reasoning focus and reducing inference cost.</p>
-    </div>
-
-    <div class="answer-box">
-      <p><strong>Answer for RQ4:</strong> Graph-guided slicing reduces the per-function input from 6{,}333 tokens to 92 tokens on average (97.9%). Under GPT-4o-mini, the mean analysis cost is 1.2 \textcent{}/project, and that cost tracks the number of surviving critical functions rather than raw code volume.</p>
-    </div>
-
-  </div>
-</section>
-
-<footer class="footer">
-  <div class="container has-text-centered">
-    <p>
-      <strong>ACLens Framework</strong> by Anonymous Author(s).<br>
-      The source code and datasets are available at <a href="https://doi.org/10.5281/zenodo.19220416">Zenodo</a>.
-    </p>
-  </div>
-</footer>
-
+        // Initialize Enterprise Network Particles
+        particlesJS('particles-js', {
+            "particles": {
+                "number": {
+                    "value": 40,
+                    "density": { "enable": true, "value_area": 800 }
+                },
+                "color": { "value": "#0ea5e9" },
+                "shape": {
+                    "type": "circle",
+                },
+                "opacity": {
+                    "value": 0.4,
+                    "random": false,
+                    "anim": { "enable": false }
+                },
+                "size": {
+                    "value": 3,
+                    "random": true,
+                    "anim": { "enable": false }
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 180,
+                    "color": "#3b82f6",
+                    "opacity": 0.25,
+                    "width": 1.5
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 1,
+                    "direction": "none",
+                    "random": true,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false,
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": { "enable": true, "mode": "grab" },
+                    "onclick": { "enable": true, "mode": "push" },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": { "distance": 180, "line_linked": { "opacity": 0.6 } },
+                    "push": { "particles_nb": 3 }
+                }
+            },
+            "retina_detect": true
+        });
+    </script>
 </body>
 </html>
