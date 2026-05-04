@@ -252,7 +252,7 @@
         <section id="introduction" class="py-20 bg-white">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8" data-aos="fade-up">
                 <h2 class="font-display text-3xl font-bold text-slate-800 mb-8 flex items-center gap-3">
-                    <span class="text-brand-500">1.</span> Introduction
+                    <span class="text-brand-500">1.</span> Introduction & Motivation
                 </h2>
                 <div class="text-slate-600 text-lg leading-relaxed space-y-6">
                     <p>Decentralized finance (DeFi) protocols built on smart contracts now manage billions of dollars in total value locked. Because these contracts are immutable once deployed, a vulnerability cannot be patched and exploitation leads to irreversible financial losses. Among all vulnerability classes, access control (AC) defects are the most costly, arising when critical operations are executed without proper authorization. In 2024, access-control exploits accounted for 75% of all crypto hacks, with roughly $1.7 billion stolen. The 2025 OWASP Smart Contract Top 10 ranks AC vulnerabilities as the number-one threat.</p>
@@ -265,7 +265,18 @@
                     
                     <p>Traditional tools address this challenge by verifying the presence of known guard patterns. In production DeFi contracts, however, authorization logic is rarely confined to standard modifiers or recognizable patterns. It emerges from intra-contract state relationships that are distributed across multiple functions and shared state variables, making it only partially visible to pattern-based analysis.</p>
                     
-                    <p>LLM-based approaches have also been explored for AC detection. Applying them effectively, however, requires overcoming two obstacles inherent to AC vulnerabilities: (1) Authorization logic is structurally indistinguishable in standard program representations. (2) Vulnerability is defined against an implicit policy specific to the contract. LLMs can reason about open-ended policies, but without structured comparative evidence they cannot distinguish intentionally permissionless interfaces from accidentally unprotected ones.</p>
+                    <p>LLM-based approaches have also been explored for AC detection. Applying them effectively, however, requires overcoming two obstacles inherent to AC vulnerabilities:</p>
+                    
+                    <ul class="space-y-4 mt-4">
+                        <li class="flex items-start">
+                            <i class="fas fa-exclamation-triangle text-amber-500 mt-1 mr-3"></i>
+                            <div><strong class="text-slate-800">C1: Authorization logic is structurally indistinguishable in standard program representations.</strong> <span class="text-slate-600 block mt-1">In conventional program graphs, guards that depend on the caller are encoded identically to ordinary business predicates, and all accesses to the same indexed state variable collapse into a single abstract location regardless of their index keys. As a result, no structural signal separates an authorization check from an arithmetic bound or a balance lookup.</span></div>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-exclamation-triangle text-amber-500 mt-1 mr-3"></i>
+                            <div><strong class="text-slate-800">C2: Vulnerability is defined against an implicit policy specific to the contract.</strong> <span class="text-slate-600 block mt-1">AC violations are meaningful only relative to an authorization policy that the developer rarely specifies explicitly. Traditional detectors reduce this ambiguity to closed-world pattern matching. LLMs can reason about open-ended policies, but without structured comparative evidence they cannot distinguish intentionally permissionless interfaces from accidentally unprotected ones.</span></div>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </section>
@@ -279,13 +290,12 @@
                 </div>
 
                 <!-- Overview -->
-                <div class="mb-16 text-lg text-slate-600 leading-relaxed" data-aos="fade-up">
-                    <p class="mb-6">Despite the semantic complexity of access control (AC) rules, their structural evidence can be identified through dependency relationships before any semantic interpretation is required. Building on this insight, we propose ACLens, a multi-agent framework for detecting AC vulnerabilities in smart contracts, guided by program graphs.</p>
-                    <p>ACLens formulates AC detection as a two-phase process. In the first phase, <strong>Graph-Guided Structural Analysis</strong> leverages an Access Control Property Graph (ACPG) to identify critical sinks and extract a compact evidence boundary for each target function. In the second phase, <strong>Multi-Agent Security Reasoning</strong> decomposes the analysis across specialized agents: one reconstructs the execution trace leading to the sink, another infers the intended authorization policy from existing protection patterns in the contract, and a verifier determines whether the trace violates that policy.</p>
+                <div class="mb-12 text-lg text-slate-600 leading-relaxed" data-aos="fade-up">
+                    <p class="mb-6">Detecting AC vulnerabilities requires first locating the operations that carry privileged effects and delimiting the security-relevant context around them. It further requires determining whether any feasible execution reaches those operations in violation of the contract's implicit authorization policy. <strong>ACLens</strong> delegates these two tasks to structural analysis guided by the program graph and multi-agent security reasoning, respectively. By design, the first phase determines what each agent in the second phase is permitted to see, ensuring that semantic judgment is always grounded in structurally scoped evidence.</p>
                 </div>
 
                 <!-- Architecture Image -->
-                <div class="mb-20" data-aos="fade-up" data-aos-delay="100">
+                <div class="mb-20 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
                     <div class="img-container bg-white p-4">
                         <img src="static/images/methodology.png" alt="Methodology Overview" class="w-full h-auto rounded-lg">
                     </div>
@@ -293,38 +303,47 @@
                 </div>
 
                 <!-- Subsections Grid -->
-                <div class="grid md:grid-cols-2 gap-12">
+                <div class="grid md:grid-cols-2 gap-8 mb-12">
                     <!-- 2.1 -->
                     <div class="bg-white rounded-2xl p-8 shadow-card border border-slate-100" data-aos="fade-right">
                         <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 mb-6 text-xl">
                             <i class="fas fa-project-diagram"></i>
                         </div>
-                        <h3 class="font-display text-2xl font-bold text-slate-800 mb-4">2.1 Structural Analysis</h3>
-                        <p class="text-slate-600 mb-6">Standard program graphs collapse all accesses to an indexed mapping into a single abstract location, obscuring the relationship between the key and the stored value. To address this, we design the <strong>Access Control Property Graph (ACPG)</strong>. The ACPG extends standard code property graphs with caller-dependent guard semantics and cross-function state links, enabling precise sink identification and compact evidence extraction via backward slicing.</p>
-                        <p class="text-slate-600">For each function, we extract a Sink-Conditioned Execution Environment (SCEE) around each critical sink by propagating relevance over the dependency edges. This ensures that the subsequent LLM reasoning phase is not overwhelmed by irrelevant contract code.</p>
+                        <h3 class="font-display text-2xl font-bold text-slate-800 mb-4">2.1 ACPG Construction</h3>
+                        <p class="text-slate-600 mb-4">We first construct a Code Property Graph (CPG) from Slither's parsing results. For AC analysis, standard CPGs lack authorization semantics and treat all mapping accesses as equivalent regardless of the key.</p>
+                        <p class="text-slate-600">The <strong>Access Control Property Graph (ACPG)</strong> resolves this by: (1) encoding guard semantics (e.g., caller-dependent predicates) directly into the graph via <code>E_role</code> edges, and (2) resolving cross-function state connections at the mapping-key level using symbolic keys. For instance, <code>balances[msg.sender]</code> carries the key <code>&lt;sender&gt;</code>, allowing precise cross-function state tracking.</p>
                     </div>
 
                     <!-- 2.2 -->
                     <div class="bg-white rounded-2xl p-8 shadow-card border border-slate-100" data-aos="fade-left">
                         <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 mb-6 text-xl">
-                            <i class="fas fa-robot"></i>
+                            <i class="fas fa-filter"></i>
                         </div>
-                        <h3 class="font-display text-2xl font-bold text-slate-800 mb-4">2.2 Multi-Agent Reasoning</h3>
-                        <p class="text-slate-600 mb-6">Rather than exposing a single LLM to the entire contract, ACLens uses the extracted SCEE to power three specialized agents, orchestrating a comprehensive security review:</p>
-                        <ul class="space-y-4">
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-brand-500 mt-1 mr-3"></i>
-                                <div><strong class="text-slate-800">Trace Generator:</strong> <span class="text-slate-600">Reconstructs a feasible execution trace from the function entry point to the critical sink.</span></div>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-brand-500 mt-1 mr-3"></i>
-                                <div><strong class="text-slate-800">Policy Auditor:</strong> <span class="text-slate-600">Analyzes other functions to infer the developer's intended authorization policy.</span></div>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check-circle text-brand-500 mt-1 mr-3"></i>
-                                <div><strong class="text-slate-800">Verifier:</strong> <span class="text-slate-600">Compares the generated trace against the inferred policy to make a final determination.</span></div>
-                            </li>
-                        </ul>
+                        <h3 class="font-display text-2xl font-bold text-slate-800 mb-4">2.2 Sink Identification & Slicing</h3>
+                        <p class="text-slate-600 mb-4">An operation is a critical sink if an unauthorized execution would violate a contract-level security invariant (e.g., Asset, Governance). ACLens queries ACPG edges to locate these sinks deterministically.</p>
+                        <p class="text-slate-600">Instead of passing the full contract to LLMs, we extract a <strong>Sink-Conditioned Execution Environment (SCEE)</strong> around each sink by propagating relevance over dependency edges. This relevance-guided backward slicing ensures agents are not overwhelmed by irrelevant code while preserving critical state relationships.</p>
+                    </div>
+                </div>
+                
+                <!-- Multi-Agent -->
+                <div class="bg-white rounded-2xl p-8 shadow-card border border-slate-100" data-aos="fade-up">
+                    <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                        <i class="fas fa-users-cog text-brand-500"></i> 2.3 Multi-Agent Security Reasoning
+                    </h3>
+                    <p class="text-slate-600 mb-6">Rather than exposing a single LLM to the entire contract, ACLens uses the extracted SCEE to power three specialized agents, orchestrating a comprehensive security review:</p>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <strong class="text-slate-800 block mb-2 text-lg"><i class="fas fa-route text-brand-500 mr-2"></i>Trace Generator</strong>
+                            <span class="text-slate-600 text-sm">Reconstructs a feasible execution trace from the function entry point to the critical sink.</span>
+                        </div>
+                        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <strong class="text-slate-800 block mb-2 text-lg"><i class="fas fa-search text-brand-500 mr-2"></i>Policy Auditor</strong>
+                            <span class="text-slate-600 text-sm">Analyzes other functions to infer the developer's intended authorization policy from structural hints.</span>
+                        </div>
+                        <div class="bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <strong class="text-slate-800 block mb-2 text-lg"><i class="fas fa-balance-scale text-brand-500 mr-2"></i>Verifier</strong>
+                            <span class="text-slate-600 text-sm">Compares the generated trace against the inferred policy to make a final vulnerability determination.</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -433,19 +452,72 @@
                 <div class="grid md:grid-cols-2 gap-12" data-aos="fade-up">
                     <div>
                         <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 border-l-4 border-brand-500 pl-4">RQ3: Ablation Study</h3>
-                        <p class="text-slate-600 mb-6">Removing multi-agent reasoning reduces recall by 16.5 points. Disabling graph slicing causes precision and recall to drop, as agents struggle with long context. Removing deterministic sink identification drastically increases false positives.</p>
+                        <p class="text-slate-600 mb-6">We measure the contribution of multi-agent reasoning, graph slicing, and sink identification by building ablation variants and evaluating them on the DeFi dataset.</p>
+                        
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                            <div class="overflow-x-auto">
+                                <table class="enterprise-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Configuration</th>
+                                            <th>TP</th>
+                                            <th>FP</th>
+                                            <th>FN</th>
+                                            <th>Recall (%)</th>
+                                            <th>F1 (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="row-highlight">
+                                            <td class="font-bold flex items-center gap-2"><i class="fas fa-star text-amber-400"></i> Full System</td>
+                                            <td>81</td><td>116</td><td>16</td><td>83.5</td><td>55.1</td>
+                                        </tr>
+                                        <tr><td>w/o multi-agent</td><td>65</td><td>87</td><td>32</td><td>67.0</td><td>52.2</td></tr>
+                                        <tr><td>w/o graph slicing</td><td>77</td><td>119</td><td>20</td><td>79.4</td><td>52.6</td></tr>
+                                        <tr><td>w/o sink ident.</td><td>81</td><td>429</td><td>16</td><td>83.5</td><td>26.7</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div class="bg-slate-50 rounded-xl p-5 border border-slate-200">
                             <h4 class="font-bold text-slate-800 mb-2"><i class="fas fa-check text-green-500 mr-2"></i> Conclusion</h4>
-                            <p class="text-sm text-slate-600">Every component of ACLens is essential. The integration of deterministic graph scoping and semantic role-playing creates a highly synergistic detection mechanism.</p>
+                            <p class="text-sm text-slate-600">Every component is essential. Removing multi-agent reasoning drops recall by 16.5 points; removing graph slicing drops recall on large contracts; removing sink identification inflates false positives from 116 to 429.</p>
                         </div>
                     </div>
                     
                     <div>
                         <h3 class="font-display text-2xl font-bold text-slate-800 mb-6 border-l-4 border-brand-500 pl-4">RQ4: Scoping Efficiency</h3>
-                        <p class="text-slate-600 mb-6">We measured how graph-guided slicing changes the input that reaches phase two. Across all functions in the DeFi dataset, SCEEs drastically reduced the token count.</p>
+                        <p class="text-slate-600 mb-6">We measure how graph-guided slicing changes the input that reaches phase two. The table below profiles the analysis cost under GPT-4o-mini on the five largest DeFi projects.</p>
+                        
+                        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                            <div class="overflow-x-auto">
+                                <table class="enterprise-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Project (repr. func)</th>
+                                            <th>LoC</th>
+                                            <th>Tokens (K)</th>
+                                            <th>Cost (¢)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td><code>approveToken</code></td><td>4,053</td><td>109.3</td><td>2.0</td></tr>
+                                        <tr><td><code>swap</code></td><td>4,008</td><td>34.6</td><td>0.7</td></tr>
+                                        <tr><td><code>transferFrom</code></td><td>3,367</td><td>42.4</td><td>0.8</td></tr>
+                                        <tr><td><code>setToken</code></td><td>3,070</td><td>86.7</td><td>1.9</td></tr>
+                                        <tr><td><code>withdraw</code></td><td>2,488</td><td>82.8</td><td>1.6</td></tr>
+                                        <tr class="bg-slate-50 font-semibold border-t-2 border-slate-300">
+                                            <td><em>All (mean)</em></td><td>1,375</td><td>59.0</td><td>1.2</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div class="bg-brand-50 rounded-xl p-5 border border-brand-200">
                             <h4 class="font-bold text-brand-900 mb-2"><i class="fas fa-bolt text-amber-500 mr-2"></i> Massive Reduction</h4>
-                            <p class="text-sm text-brand-800">Graph-guided structural analysis reduces the average input context from over <strong>6,300 tokens</strong> (full contract) to just <strong>92 tokens</strong> per function, lowering API costs and improving focus.</p>
+                            <p class="text-sm text-brand-800">Graph-guided structural analysis reduces the average input context from over <strong>6,333 tokens</strong> (full contract) to just <strong>92 tokens</strong> per function (97.9% reduction), drastically lowering API costs.</p>
                         </div>
                     </div>
                 </div>
